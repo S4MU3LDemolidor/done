@@ -1,5 +1,11 @@
 import { describe, expect, test } from "vitest";
-import { formatDue, isOverdue, parseTask, toIsoDate } from "./parser";
+import {
+  formatDue,
+  isOverdue,
+  parseTask,
+  toIsoDate,
+  toLocalIsoDateTime,
+} from "./parser";
 
 // Quinta-feira, 11 de junho de 2026
 const NOW = new Date(2026, 5, 11, 10, 30);
@@ -178,5 +184,19 @@ describe("isOverdue", () => {
 describe("toIsoDate", () => {
   test("formata em horário local, não UTC", () => {
     expect(toIsoDate(new Date(2026, 0, 1, 0, 5))).toBe("2026-01-01");
+  });
+});
+
+describe("toLocalIsoDateTime", () => {
+  test("data e hora locais sem sufixo de fuso", () => {
+    expect(toLocalIsoDateTime(new Date(2026, 3, 28, 10, 32, 0))).toBe(
+      "2026-04-28T10:32:00",
+    );
+  });
+
+  test("zera à esquerda", () => {
+    expect(toLocalIsoDateTime(new Date(2026, 0, 5, 9, 7, 3))).toBe(
+      "2026-01-05T09:07:03",
+    );
   });
 });

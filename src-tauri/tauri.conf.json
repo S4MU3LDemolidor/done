@@ -26,8 +26,8 @@
       {
         "label": "quickadd",
         "title": "FocusBar Quick Add",
-        "width": 620,
-        "height": 240,
+        "width": 640,
+        "height": 122,
         "visible": false,
         "decorations": false,
         "transparent": true,
@@ -35,8 +35,12 @@
         "skipTaskbar": true,
         "resizable": false,
         "center": true,
-        "shadow": false,
-        "visibleOnAllWorkspaces": true
+        "shadow": true,
+        "visibleOnAllWorkspaces": true,
+        "windowEffects": {
+          "effects": ["hudWindow"],
+          "radius": 16
+        }
       }
     ],
     "security": {

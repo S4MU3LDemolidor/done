@@ -29,6 +29,12 @@ export function toIsoDate(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+export function toLocalIsoDateTime(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const time = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  return `${toIsoDate(d)}T${time}`;
+}
+
 function startOfDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
@@ -91,7 +97,8 @@ export function parseTask(input: string, now: Date = new Date()): ParsedTask {
 
   for (const segment of segments.slice(1)) {
     if (!segment) continue;
-    const date = due === null ? parseDateSegment(segment, now) : null;
+    const date: string | null =
+      due === null ? parseDateSegment(segment, now) : null;
     if (date) {
       due = date;
     } else {
