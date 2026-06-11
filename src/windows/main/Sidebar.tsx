@@ -28,7 +28,7 @@ export function Sidebar({
   const [groupsOpen, setGroupsOpen] = useState(true);
 
   return (
-    <aside className="flex w-[210px] shrink-0 flex-col border-r border-line bg-[#19191b] pt-11">
+    <aside className="flex w-[210px] shrink-0 flex-col border-r border-line bg-black/[0.18] pt-11">
       <div className="px-4 pb-3 text-[15px] font-semibold tracking-tight text-ink">
         FocusBar
       </div>

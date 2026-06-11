@@ -5,17 +5,18 @@
     sans-serif;
 
   --color-bg: #1c1c1e;
-  --color-raised: #232327;
+  --color-raised: rgba(44, 44, 48, 0.96);
   --color-hover: rgba(255, 255, 255, 0.045);
   --color-line: rgba(255, 255, 255, 0.07);
   --color-ink: #f2f2f7;
   --color-dim: #98989f;
   --color-faint: #636368;
-  --color-accent: #7c5cff;
-  --color-accent-dim: rgba(124, 92, 255, 0.16);
-  --color-coral: #ff6b6b;
-  --color-coral-dim: rgba(255, 107, 107, 0.14);
-  --color-mint: #4ade80;
+  --color-accent: #ff6363;
+  --color-accent-dim: rgba(255, 99, 99, 0.16);
+  --color-overdue: #ffb454;
+  --color-danger: #ff6363;
+  --color-danger-dim: rgba(255, 99, 99, 0.14);
+  --color-mint: #59d499;
 }
 
 html,
@@ -29,9 +30,10 @@ body,
   cursor: default;
 }
 
-/* Janela principal: fundo sólido escuro */
-html[data-window="main"] {
-  background: var(--color-bg);
+/* Janela principal: translúcida sobre o material da janela (estilo Raycast) */
+html[data-window="main"],
+html[data-window="main"] body {
+  background: rgba(26, 26, 28, 0.78);
   color: var(--color-ink);
 }
 
@@ -49,7 +51,7 @@ textarea {
 }
 
 ::selection {
-  background: rgba(124, 92, 255, 0.35);
+  background: rgba(255, 99, 99, 0.35);
 }
 
 /* Scrollbar discreta estilo macOS */

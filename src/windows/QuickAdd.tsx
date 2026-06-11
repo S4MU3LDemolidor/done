@@ -3,6 +3,7 @@ import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { parseTask, formatDue, toLocalIsoDateTime } from "../lib/parser";
 import { saveTask } from "../lib/store";
 import { SparkleIcon } from "../components/Icons";
+import { Kbd } from "../components/Kbd";
 import type { Task } from "../lib/types";
 
 const win = getCurrentWebviewWindow();
@@ -69,33 +70,28 @@ export default function QuickAdd() {
   }
 
   return (
-    <div className="relative h-full overflow-hidden rounded-[16px] border border-white/10 bg-[rgba(28,28,30,0.72)] shadow-[0_24px_60px_rgba(0,0,0,0.45)]">
-      {/* Linha do input */}
-      <div className="flex h-[72px] items-center gap-3.5 px-5">
-        <SparkleIcon size={20} className="shrink-0 text-accent" />
+    <div className="relative flex h-full flex-col overflow-hidden rounded-[16px] border border-white/10 bg-[rgba(28,28,30,0.72)] shadow-[0_24px_60px_rgba(0,0,0,0.45)]">
+      {/* Linha do input: bloco de ícone + campo grande */}
+      <div className="flex h-[56px] shrink-0 items-center gap-3 px-3.5">
+        <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[8px] border border-white/10 bg-white/[0.05]">
+          <SparkleIcon size={15} className="text-accent" />
+        </span>
         <input
           ref={inputRef}
           autoFocus
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder="limpar casa, sexta, casa"
+          placeholder="Adicionar tarefa… ex.: limpar casa, sexta, casa"
           spellCheck={false}
-          className="h-full flex-1 bg-transparent text-[18px] font-normal text-ink outline-none placeholder:text-faint"
+          className="h-full flex-1 bg-transparent text-[17px] font-normal text-ink outline-none placeholder:text-faint"
         />
-        <button
-          onClick={submit}
-          disabled={!parsed.title.trim()}
-          className="shrink-0 rounded-lg bg-accent-dim px-3 py-1.5 text-[13px] font-medium text-accent transition-opacity duration-150 disabled:opacity-35"
-        >
-          ↵ adicionar
-        </button>
       </div>
 
-      <div className="border-t border-line" />
+      <div className="shrink-0 border-t border-line" />
 
       {/* Pré-visualização dos campos */}
-      <div className="flex h-[48px] items-center gap-2 px-5 text-[12px]">
+      <div className="flex flex-1 items-center gap-2 px-4 text-[12px]">
         {text.trim() ? (
           <>
             {parsed.title.trim() && (
@@ -110,6 +106,29 @@ export default function QuickAdd() {
             obrigatório
           </span>
         )}
+      </div>
+
+      {/* Barra de ações (rodapé estilo Raycast) */}
+      <div className="flex h-[38px] shrink-0 items-center justify-between border-t border-line bg-black/20 px-3.5 text-[12px]">
+        <span className="flex items-center gap-1.5 font-medium text-dim">
+          <SparkleIcon size={12} className="text-accent" />
+          FocusBar
+        </span>
+        <span className="flex items-center gap-2">
+          <button
+            onClick={submit}
+            disabled={!parsed.title.trim()}
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-dim transition-colors duration-150 enabled:hover:bg-hover enabled:hover:text-ink disabled:opacity-40"
+          >
+            Adicionar
+            <Kbd>↵</Kbd>
+          </button>
+          <span className="text-white/10">|</span>
+          <span className="flex items-center gap-1.5 text-faint">
+            Fechar
+            <Kbd>esc</Kbd>
+          </span>
+        </span>
       </div>
 
       {/* Estado de sucesso */}

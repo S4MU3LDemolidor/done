@@ -1,6 +1,6 @@
 import confetti from "canvas-confetti";
 
-const COLORS = ["#7C5CFF", "#9D85FF", "#4ADE80", "#FFB454", "#FF6B9D"];
+const COLORS = ["#FF6363", "#FF8F8F", "#59D499", "#FFB454", "#FFD166"];
 
 /** Fogos de artifício centrados no elemento marcado. Maior quando concluído no prazo. */
 export function fireworksAt(el: HTMLElement, onTime: boolean): void {

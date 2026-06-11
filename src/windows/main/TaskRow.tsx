@@ -27,10 +27,12 @@ export function TaskRow({ task, onToggle, onContextMenu, meta }: TaskRowProps) {
         ref={checkboxRef}
         onClick={() => checkboxRef.current && onToggle(task, checkboxRef.current)}
         aria-label={task.done ? "Reabrir tarefa" : "Concluir tarefa"}
-        className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[5px] border transition-colors duration-150 ${
+        className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors duration-150 ${
           task.done
             ? "border-accent bg-accent"
-            : "border-faint group-hover:border-accent"
+            : overdue
+              ? "border-overdue group-hover:border-accent"
+              : "border-faint group-hover:border-accent"
         }`}
       >
         {task.done && (
@@ -58,11 +60,13 @@ export function TaskRow({ task, onToggle, onContextMenu, meta }: TaskRowProps) {
 
       <span className="flex shrink-0 items-center gap-2.5 text-[12px]">
         {task.group && (
-          <span className="flex items-center gap-1.5 rounded-full bg-white/[0.06] px-2 py-0.5 text-dim">
-            <span
-              className="h-[6px] w-[6px] rounded-full"
-              style={{ background: groupColor(task.group) }}
-            />
+          <span
+            className="rounded-[5px] px-2 py-0.5 text-[11px] font-medium"
+            style={{
+              background: `${groupColor(task.group)}26`,
+              color: groupColor(task.group),
+            }}
+          >
             {task.group}
           </span>
         )}
@@ -71,7 +75,7 @@ export function TaskRow({ task, onToggle, onContextMenu, meta }: TaskRowProps) {
         ) : task.done ? (
           <span className="text-faint">concluído</span>
         ) : task.due ? (
-          <span className={overdue ? "font-medium text-coral" : "text-dim"}>
+          <span className={overdue ? "font-medium text-overdue" : "text-dim"}>
             {overdue ? `atrasada · ${formatDue(task.due)}` : formatDue(task.due)}
           </span>
         ) : null}

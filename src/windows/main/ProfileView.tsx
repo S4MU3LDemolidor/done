@@ -21,7 +21,7 @@ export function ProfileView({
     <div className="mx-auto max-w-[560px] pt-4">
       {/* Cabeçalho: avatar + nível */}
       <div className="flex items-center gap-4">
-        <div className="flex h-[60px] w-[60px] items-center justify-center rounded-full bg-gradient-to-br from-accent to-[#5a3fd9] text-[22px] font-semibold text-white">
+        <div className="flex h-[60px] w-[60px] items-center justify-center rounded-full bg-gradient-to-br from-accent to-[#c93a3a] text-[22px] font-semibold text-white">
           FB
         </div>
         <div className="min-w-0 flex-1">
@@ -37,7 +37,7 @@ export function ProfileView({
       {/* Barra de XP */}
       <div className="mt-5 h-[8px] overflow-hidden rounded-full bg-white/[0.07]">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-accent to-[#9d85ff] transition-[width] duration-300 ease-out"
+          className="h-full rounded-full bg-gradient-to-r from-accent to-[#ff8f8f] transition-[width] duration-300 ease-out"
           style={{ width: `${Math.max(2, progress * 100)}%` }}
         />
       </div>

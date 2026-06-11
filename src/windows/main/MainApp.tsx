@@ -14,6 +14,7 @@ import {
 } from "../../lib/store";
 import { fireworksAt } from "../../lib/fireworks";
 import { PlusIcon, TrashIcon } from "../../components/Icons";
+import { Kbd } from "../../components/Kbd";
 import { Sidebar } from "./Sidebar";
 import { Toasts, type Toast } from "./Toasts";
 import { ACHIEVEMENTS } from "./achievements";
@@ -191,17 +192,6 @@ export default function MainApp() {
             </h1>
             {subtitle && <p className="mt-0.5 text-[12px] text-dim">{subtitle}</p>}
           </div>
-          <button
-            onClick={openQuickAdd}
-            title="Nova tarefa (⌥ Espaço)"
-            className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-[12px] text-dim transition-colors duration-150 hover:bg-hover hover:text-ink"
-          >
-            <PlusIcon size={14} />
-            Nova tarefa
-            <kbd className="rounded bg-white/[0.08] px-1.5 py-0.5 text-[10px] font-medium text-faint">
-              ⌥ ␣
-            </kbd>
-          </button>
         </header>
 
         <div className="flex-1 overflow-y-auto px-5 py-2">
@@ -217,6 +207,34 @@ export default function MainApp() {
             <GroupView name={view.name} tasks={tasks} actions={actions} />
           )}
         </div>
+
+        {/* Barra de ações (rodapé estilo Raycast) */}
+        <footer className="flex h-[38px] shrink-0 items-center justify-between border-t border-line bg-black/20 px-4 text-[12px]">
+          <span className="flex items-center gap-1.5 font-medium text-dim">
+            <span className="text-accent">✦</span>
+            FocusBar
+          </span>
+          <span className="flex items-center gap-2">
+            <button
+              onClick={openQuickAdd}
+              className="flex items-center gap-1.5 rounded-md px-2 py-1 text-dim transition-colors duration-150 hover:bg-hover hover:text-ink"
+            >
+              <PlusIcon size={13} />
+              Nova tarefa
+              <Kbd>⌥</Kbd>
+              <Kbd>␣</Kbd>
+            </button>
+            <span className="text-white/10">|</span>
+            <button
+              onClick={openQuickAdd}
+              className="flex items-center gap-1.5 rounded-md px-2 py-1 text-faint transition-colors duration-150 hover:bg-hover hover:text-ink"
+            >
+              Adição rápida
+              <Kbd>⌘</Kbd>
+              <Kbd>K</Kbd>
+            </button>
+          </span>
+        </footer>
       </main>
 
       {/* Menu de contexto: excluir com confirmação */}
@@ -245,7 +263,7 @@ export default function MainApp() {
               }
               className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-colors duration-150 ${
                 menu.confirming
-                  ? "bg-coral-dim font-medium text-coral"
+                  ? "bg-danger-dim font-medium text-danger"
                   : "text-ink hover:bg-hover"
               }`}
             >

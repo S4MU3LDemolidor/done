@@ -46,28 +46,28 @@ export function TodayView({
   return (
     <div>
       {overdue.length > 0 && (
-        <Section label="Atrasadas" tone="coral">
+        <Section label="Atrasadas" count={overdue.length} tone="overdue">
           {overdue.map((t) => (
             <TaskRow key={t.id} task={t} {...actions} />
           ))}
         </Section>
       )}
       {dueToday.length > 0 && (
-        <Section label="Hoje">
+        <Section label="Hoje" count={dueToday.length}>
           {dueToday.map((t) => (
             <TaskRow key={t.id} task={t} {...actions} />
           ))}
         </Section>
       )}
       {noDate.length > 0 && (
-        <Section label="Sem data">
+        <Section label="Sem data" count={noDate.length}>
           {noDate.map((t) => (
             <TaskRow key={t.id} task={t} {...actions} />
           ))}
         </Section>
       )}
       {doneToday.length > 0 && (
-        <Section label="Concluídas hoje">
+        <Section label="Concluídas hoje" count={doneToday.length}>
           {doneToday.map((t) => (
             <TaskRow key={t.id} task={t} {...actions} />
           ))}
@@ -108,6 +108,7 @@ export function AgendaView({
         <Section
           key={iso}
           label={`${WEEKDAYS_SHORT[date.getDay()]} · ${formatDue(iso, now)}`}
+          count={items.length}
         >
           {items.map((t) => (
             <TaskRow key={t.id} task={t} {...actions} />
@@ -170,7 +171,7 @@ export function GroupView({
         <TaskRow key={t.id} task={t} {...actions} />
       ))}
       {done.length > 0 && (
-        <Section label="Concluídas">
+        <Section label="Concluídas" count={done.length}>
           {done.map((t) => (
             <TaskRow key={t.id} task={t} {...actions} />
           ))}
@@ -182,21 +183,30 @@ export function GroupView({
 
 function Section({
   label,
+  count,
   tone,
   children,
 }: {
   label: string;
-  tone?: "coral";
+  count?: number;
+  tone?: "overdue";
   children: React.ReactNode;
 }) {
   return (
     <section className="mb-4">
-      <h2
-        className={`px-3 pt-4 pb-1.5 text-[11px] font-semibold tracking-wide uppercase ${
-          tone === "coral" ? "text-coral" : "text-faint"
-        }`}
-      >
-        {label}
+      <h2 className="flex items-baseline gap-2 px-3 pt-4 pb-1.5">
+        <span
+          className={`text-[12px] font-semibold ${
+            tone === "overdue" ? "text-overdue" : "text-dim"
+          }`}
+        >
+          {label}
+        </span>
+        {count !== undefined && (
+          <span className="text-[11px] text-faint">
+            {count} {count === 1 ? "tarefa" : "tarefas"}
+          </span>
+        )}
       </h2>
       {children}
     </section>

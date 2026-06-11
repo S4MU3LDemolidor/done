@@ -1,9 +1,9 @@
 const PALETTE = [
-  "#7C5CFF",
-  "#5CA8FF",
-  "#4ADE80",
+  "#FF6363",
+  "#56C2FF",
+  "#59D499",
   "#FFB454",
-  "#FF6B9D",
+  "#CF9EF1",
   "#2DD4BF",
 ];
 
