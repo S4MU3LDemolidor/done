@@ -185,12 +185,22 @@ export default function MainApp() {
       />
 
       <main className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-end justify-between border-b border-line px-7 pt-11 pb-3.5">
-          <div>
-            <h1 className="text-[17px] font-semibold tracking-tight text-ink">
+        <header
+          data-tauri-drag-region
+          className="flex items-end justify-between border-b border-line px-7 pt-11 pb-3.5"
+        >
+          <div data-tauri-drag-region>
+            <h1
+              data-tauri-drag-region
+              className="text-[17px] font-semibold tracking-tight text-ink"
+            >
               {title}
             </h1>
-            {subtitle && <p className="mt-0.5 text-[12px] text-dim">{subtitle}</p>}
+            {subtitle && (
+              <p data-tauri-drag-region className="mt-0.5 text-[12px] text-dim">
+                {subtitle}
+              </p>
+            )}
           </div>
         </header>
 
@@ -209,9 +219,17 @@ export default function MainApp() {
         </div>
 
         {/* Barra de ações (rodapé estilo Raycast) */}
-        <footer className="flex h-[38px] shrink-0 items-center justify-between border-t border-line bg-black/20 px-4 text-[12px]">
-          <span className="flex items-center gap-1.5 font-medium text-dim">
-            <span className="text-accent">✦</span>
+        <footer
+          data-tauri-drag-region
+          className="flex h-[38px] shrink-0 items-center justify-between border-t border-line bg-black/20 px-4 text-[12px]"
+        >
+          <span
+            data-tauri-drag-region
+            className="flex items-center gap-1.5 font-medium text-dim"
+          >
+            <span data-tauri-drag-region className="text-accent">
+              ✦
+            </span>
             Done
           </span>
           <span className="flex items-center gap-2">

@@ -28,8 +28,14 @@ export function Sidebar({
   const [groupsOpen, setGroupsOpen] = useState(true);
 
   return (
-    <aside className="flex w-[210px] shrink-0 flex-col border-r border-line bg-black/[0.18] pt-11">
-      <div className="px-4 pb-3 text-[15px] font-semibold tracking-tight text-ink">
+    <aside
+      data-tauri-drag-region
+      className="flex w-[210px] shrink-0 flex-col border-r border-line bg-black/[0.18] pt-11"
+    >
+      <div
+        data-tauri-drag-region
+        className="px-4 pb-3 text-[15px] font-semibold tracking-tight text-ink"
+      >
         Done
       </div>
 
