@@ -112,7 +112,7 @@ export default function QuickAdd() {
       <div className="flex h-[38px] shrink-0 items-center justify-between border-t border-line bg-black/20 px-3.5 text-[12px]">
         <span className="flex items-center gap-1.5 font-medium text-dim">
           <SparkleIcon size={12} className="text-accent" />
-          FocusBar
+          Done
         </span>
         <span className="flex items-center gap-2">
           <button

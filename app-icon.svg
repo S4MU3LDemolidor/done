@@ -1,0 +1,66 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Fundo: gradiente escuro estilo Raycast -->
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c2c31"/>
+      <stop offset="0.55" stop-color="#1d1d20"/>
+      <stop offset="1" stop-color="#141416"/>
+    </linearGradient>
+    <!-- Brilho vermelho atrás do glifo -->
+    <radialGradient id="glow" cx="0.5" cy="0.56" r="0.5">
+      <stop offset="0" stop-color="#ff6363" stop-opacity="0.55"/>
+      <stop offset="0.5" stop-color="#ff6363" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#ff6363" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Vermelho do glifo -->
+    <linearGradient id="check" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff8f8f"/>
+      <stop offset="1" stop-color="#ff5252"/>
+    </linearGradient>
+    <filter id="blurBig" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="46"/>
+    </filter>
+    <filter id="blurSoft" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+    <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="22" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+    <!-- Grão fino para evitar banding nos gradientes -->
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="7" stitchTiles="stitch"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0.3 0.3 0.3 0 0"/>
+    </filter>
+    <clipPath id="squircleClip">
+      <rect x="100" y="100" width="824" height="824" rx="184"/>
+    </clipPath>
+  </defs>
+
+  <!-- Squircle com sombra -->
+  <rect x="100" y="100" width="824" height="824" rx="184" fill="url(#bg)" filter="url(#dropShadow)"/>
+
+  <g clip-path="url(#squircleClip)">
+    <!-- Bloom vermelho central -->
+    <ellipse cx="512" cy="580" rx="430" ry="400" fill="url(#glow)"/>
+    <!-- Grão sutil por cima dos gradientes -->
+    <rect x="100" y="100" width="824" height="824" filter="url(#grain)" opacity="0.05"/>
+    <!-- Linha de luz no topo, como nas janelas do Raycast -->
+    <rect x="100" y="100" width="824" height="3" fill="#ffffff" opacity="0.16"/>
+
+    <!-- Glifo: check com brilho -->
+    <g stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <path d="M 320 552 L 462 694 L 704 392" stroke="#ff5e5e" stroke-width="112" opacity="0.75" filter="url(#blurBig)"/>
+      <path d="M 320 552 L 462 694 L 704 392" stroke="url(#check)" stroke-width="96"/>
+      <path d="M 320 552 L 462 694 L 704 392" stroke="#ffffff" stroke-width="26" opacity="0.28" transform="translate(0,-16)" filter="url(#blurSoft)"/>
+    </g>
+
+    <!-- Faísca ✦ no canto superior direito do glifo -->
+    <g>
+      <path d="M 728 252 L 748 312 L 808 332 L 748 352 L 728 412 L 708 352 L 648 332 L 708 312 Z" fill="#ff8f8f" opacity="0.7" filter="url(#blurSoft)"/>
+      <path d="M 728 252 L 748 312 L 808 332 L 748 352 L 728 412 L 708 352 L 648 332 L 708 312 Z" fill="#ffd1d1"/>
+    </g>
+  </g>
+
+  <!-- Borda interna sutil -->
+  <rect x="102" y="102" width="820" height="820" rx="182" fill="none" stroke="#ffffff" stroke-opacity="0.10" stroke-width="4"/>
+</svg>

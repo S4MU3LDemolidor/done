@@ -22,7 +22,7 @@ export function ProfileView({
       {/* Cabeçalho: avatar + nível */}
       <div className="flex items-center gap-4">
         <div className="flex h-[60px] w-[60px] items-center justify-center rounded-full bg-gradient-to-br from-accent to-[#c93a3a] text-[22px] font-semibold text-white">
-          FB
+          D
         </div>
         <div className="min-w-0 flex-1">
           <div className="text-[18px] font-semibold text-ink">

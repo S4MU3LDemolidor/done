@@ -1,12 +1,12 @@
 [package]
-name = "focusbar"
+name = "done"
 version = "0.1.0"
-description = "FocusBar — local-first to-do app with a Raycast-style quick-add bar"
+description = "Done — local-first to-do app with a Raycast-style quick-add bar"
 authors = ["samwelltech"]
 edition = "2021"
 
 [lib]
-name = "focusbar_lib"
+name = "done_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

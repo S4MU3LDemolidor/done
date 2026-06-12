@@ -212,7 +212,7 @@ export default function MainApp() {
         <footer className="flex h-[38px] shrink-0 items-center justify-between border-t border-line bg-black/20 px-4 text-[12px]">
           <span className="flex items-center gap-1.5 font-medium text-dim">
             <span className="text-accent">✦</span>
-            FocusBar
+            Done
           </span>
           <span className="flex items-center gap-2">
             <button

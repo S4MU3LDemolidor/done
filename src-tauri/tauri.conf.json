@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "FocusBar",
+  "productName": "Done",
   "version": "0.1.0",
-  "identifier": "com.samwelltech.focusbar",
+  "identifier": "com.samwelltech.done",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "FocusBar",
+        "title": "Done",
         "width": 980,
         "height": 640,
         "minWidth": 760,
@@ -29,7 +29,7 @@
       },
       {
         "label": "quickadd",
-        "title": "FocusBar Quick Add",
+        "title": "Done Quick Add",
         "width": 660,
         "height": 146,
         "visible": false,

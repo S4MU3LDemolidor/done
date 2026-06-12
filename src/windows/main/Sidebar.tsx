@@ -30,7 +30,7 @@ export function Sidebar({
   return (
     <aside className="flex w-[210px] shrink-0 flex-col border-r border-line bg-black/[0.18] pt-11">
       <div className="px-4 pb-3 text-[15px] font-semibold tracking-tight text-ink">
-        FocusBar
+        Done
       </div>
 
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-2.5">

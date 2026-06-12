@@ -1,4 +1,4 @@
-# FocusBar ✦
+# Done ✦
 
 App de tarefas 100% local para macOS, com barra de adição rápida estilo Raycast.
 
@@ -29,6 +29,16 @@ npm test
 
 Cobrem o parser de linguagem natural em PT-BR (`dd/mm`, `dd/mm/yyyy`, `hoje`,
 `amanhã`, dias da semana) e a lógica de XP, níveis, sequência e conquistas.
+
+## Ícone
+
+O ícone vem de `app-icon.svg` (desenhado no design system do app). Para
+regenerar todos os formatos depois de editar o SVG:
+
+```bash
+node -e "require('sharp')('app-icon.svg',{density:144}).resize(1024,1024).png().toFile('app-icon.png')"
+npx tauri icon app-icon.png
+```
 
 ## Estrutura
 
