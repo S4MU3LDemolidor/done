@@ -3,6 +3,7 @@ import {
   formatDue,
   isOverdue,
   parseTask,
+  toEditText,
   toIsoDate,
   toLocalIsoDateTime,
 } from "./parser";
@@ -184,6 +185,34 @@ describe("isOverdue", () => {
 describe("toIsoDate", () => {
   test("formata em horário local, não UTC", () => {
     expect(toIsoDate(new Date(2026, 0, 1, 0, 5))).toBe("2026-01-01");
+  });
+});
+
+describe("toEditText — texto editável que o parser reconstrói", () => {
+  test("só título", () => {
+    expect(toEditText({ title: "academia", due: null, group: null })).toBe(
+      "academia",
+    );
+  });
+
+  test("título, data e grupo fazem ida e volta pelo parser", () => {
+    const text = toEditText({
+      title: "revisar PR",
+      due: "2026-06-15",
+      group: "trabalho",
+    });
+    expect(text).toBe("revisar PR, 15/06/2026, trabalho");
+    expect(parseTask(text, NOW)).toEqual({
+      title: "revisar PR",
+      due: "2026-06-15",
+      group: "trabalho",
+    });
+  });
+
+  test("grupo sem data", () => {
+    expect(toEditText({ title: "limpar casa", due: null, group: "casa" })).toBe(
+      "limpar casa, casa",
+    );
   });
 });
 

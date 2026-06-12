@@ -1,31 +1,87 @@
-import { useRef } from "react";
-import { formatDue, isOverdue } from "../../lib/parser";
+import { useEffect, useRef } from "react";
+import { formatDue, isOverdue, toEditText } from "../../lib/parser";
 import { groupColor } from "../../lib/colors";
 import type { Task } from "../../lib/types";
 
-interface TaskRowProps {
-  task: Task;
+export interface RowActions {
   onToggle: (task: Task, checkboxEl: HTMLElement) => void;
   onContextMenu: (task: Task, x: number, y: number) => void;
-  /** Texto extra à direita (ex.: "+15 XP" na tela de concluídas) */
+  onSelect: (task: Task) => void;
+  onStartEdit: (task: Task) => void;
+  onSubmitEdit: (task: Task, text: string) => void;
+  onCancelEdit: () => void;
+}
+
+interface TaskRowProps extends RowActions {
+  task: Task;
+  selected: boolean;
+  editing: boolean;
   meta?: string;
 }
 
-export function TaskRow({ task, onToggle, onContextMenu, meta }: TaskRowProps) {
+export function TaskRow({
+  task,
+  selected,
+  editing,
+  meta,
+  onToggle,
+  onContextMenu,
+  onSelect,
+  onStartEdit,
+  onSubmitEdit,
+  onCancelEdit,
+}: TaskRowProps) {
+  const rowRef = useRef<HTMLDivElement>(null);
   const checkboxRef = useRef<HTMLButtonElement>(null);
   const overdue = !task.done && isOverdue(task.due);
 
+  useEffect(() => {
+    if (selected) rowRef.current?.scrollIntoView({ block: "nearest" });
+  }, [selected]);
+
+  if (editing) {
+    return (
+      <div className="flex h-[46px] items-center gap-3 rounded-lg bg-white/[0.06] px-3 ring-1 ring-accent/60">
+        <span className="h-[18px] w-[18px] shrink-0 rounded-full border-[1.5px] border-faint" />
+        <input
+          autoFocus
+          defaultValue={toEditText(task)}
+          spellCheck={false}
+          onFocus={(e) => e.currentTarget.select()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") onSubmitEdit(task, e.currentTarget.value);
+            if (e.key === "Escape") onCancelEdit();
+          }}
+          onBlur={onCancelEdit}
+          className="h-full min-w-0 flex-1 bg-transparent text-[14px] text-ink outline-none"
+        />
+        <span className="shrink-0 text-[11px] text-faint">↵ salvar · esc cancelar</span>
+      </div>
+    );
+  }
+
   return (
     <div
+      ref={rowRef}
+      data-task-id={task.id}
+      onClick={() => onSelect(task)}
+      onDoubleClick={() => onStartEdit(task)}
       onContextMenu={(e) => {
         e.preventDefault();
+        onSelect(task);
         onContextMenu(task, e.clientX, e.clientY);
       }}
-      className="group flex h-[46px] items-center gap-3 rounded-lg px-3 transition-colors duration-150 hover:bg-hover"
+      className={`group flex h-[46px] items-center gap-3 rounded-lg px-3 transition-colors duration-150 ${
+        selected ? "bg-white/[0.07]" : "hover:bg-hover"
+      }`}
     >
       <button
         ref={checkboxRef}
-        onClick={() => checkboxRef.current && onToggle(task, checkboxRef.current)}
+        data-checkbox
+        onClick={(e) => {
+          e.stopPropagation();
+          if (checkboxRef.current) onToggle(task, checkboxRef.current);
+        }}
         aria-label={task.done ? "Reabrir tarefa" : "Concluir tarefa"}
         className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors duration-150 ${
           task.done

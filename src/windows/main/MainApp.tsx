@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { emitTo } from "@tauri-apps/api/event";
-import { toIsoDate, toLocalIsoDateTime } from "../../lib/parser";
+import { parseTask, toIsoDate, toLocalIsoDateTime } from "../../lib/parser";
 import { evaluateAchievements, streak, xpForCompletion } from "../../lib/game";
 import {
   deleteTask,
@@ -13,20 +13,18 @@ import {
   type AchievementState,
 } from "../../lib/store";
 import { fireworksAt } from "../../lib/fireworks";
-import { PlusIcon, TrashIcon } from "../../components/Icons";
+import { PencilIcon, PlusIcon, TrashIcon } from "../../components/Icons";
 import { Kbd } from "../../components/Kbd";
 import { Sidebar } from "./Sidebar";
 import { Toasts, type Toast } from "./Toasts";
 import { ACHIEVEMENTS } from "./achievements";
 import { ProfileView } from "./ProfileView";
 import {
-  AgendaView,
-  CompletedView,
-  GroupView,
-  TodayView,
+  TaskList,
   pendingTodayTasks,
-  type TaskActions,
+  sectionsFor,
 } from "./views";
+import type { RowActions } from "./TaskRow";
 import type { Task } from "../../lib/types";
 
 export type View =
@@ -40,17 +38,25 @@ interface ContextMenu {
   task: Task;
   x: number;
   y: number;
-  confirming: boolean;
 }
 
 export default function MainApp() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [view, setView] = useState<View>({ kind: "today" });
+  const [view, setViewRaw] = useState<View>({ kind: "today" });
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [ach, setAch] = useState<AchievementState | null>(null);
   const [menu, setMenu] = useState<ContextMenu | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const toastId = useRef(0);
+
+  const setView = useCallback((v: View) => {
+    setViewRaw(v);
+    setSelectedId(null);
+    setEditingId(null);
+    setMenu(null);
+  }, []);
 
   const reload = useCallback(async () => {
     try {
@@ -79,11 +85,22 @@ export default function MainApp() {
     };
   }, [reload]);
 
-  const pushToast = useCallback((emoji: string, title: string, sub?: string) => {
-    const id = ++toastId.current;
-    setToasts((ts) => [...ts, { id, emoji, title, sub }]);
-    setTimeout(() => setToasts((ts) => ts.filter((t) => t.id !== id)), 3200);
-  }, []);
+  const pushToast = useCallback(
+    (emoji: string, title: string, sub?: string, action?: Toast["action"]) => {
+      const id = ++toastId.current;
+      setToasts((ts) => [...ts, { id, emoji, title, sub, action }]);
+      setTimeout(
+        () => setToasts((ts) => ts.filter((t) => t.id !== id)),
+        action ? 5000 : 3200,
+      );
+    },
+    [],
+  );
+
+  function runToastAction(toast: Toast) {
+    toast.action?.run();
+    setToasts((ts) => ts.filter((t) => t.id !== toast.id));
+  }
 
   // Conquistas: avalia a cada mudança e persiste as novas
   useEffect(() => {
@@ -107,18 +124,6 @@ export default function MainApp() {
     );
   }, [tasks, loaded, ach, pushToast]);
 
-  // ⌘K abre a barra de adição rápida
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.metaKey && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        openQuickAdd();
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
   async function persist(updated: Task) {
     setTasks((ts) => ts.map((t) => (t.id === updated.id ? updated : t)));
     try {
@@ -135,14 +140,18 @@ export default function MainApp() {
       const now = new Date();
       const xp = xpForCompletion(task.due, now);
       const onTime = task.due !== null && toIsoDate(now) <= task.due;
-      fireworksAt(checkboxEl, onTime);
-      pushToast("✦", `+${xp} XP`, onTime ? "concluída no prazo!" : undefined);
-      persist({
+      const completed: Task = {
         ...task,
         done: true,
         completedAt: toLocalIsoDateTime(now),
         xp,
+      };
+      fireworksAt(checkboxEl, onTime);
+      pushToast("✦", `+${xp} XP`, onTime ? "concluída no prazo!" : undefined, {
+        label: "Desfazer",
+        run: () => persist({ ...task, done: false, completedAt: null, xp: 10 }),
       });
+      persist(completed);
     } else {
       persist({ ...task, done: false, completedAt: null, xp: 10 });
     }
@@ -151,8 +160,17 @@ export default function MainApp() {
   async function removeTask(task: Task) {
     setMenu(null);
     setTasks((ts) => ts.filter((t) => t.id !== task.id));
+    if (selectedId === task.id) setSelectedId(null);
     try {
       await deleteTask(task.id);
+      pushToast("🗑️", "Tarefa excluída", task.title, {
+        label: "Desfazer",
+        run: () => {
+          saveTask(task).catch((err) =>
+            console.error("Falha ao restaurar tarefa:", err),
+          );
+        },
+      });
     } catch (err) {
       console.error("Falha ao excluir tarefa:", err);
       pushToast("⚠️", "Não foi possível excluir", "Tente de novo");
@@ -160,9 +178,101 @@ export default function MainApp() {
     }
   }
 
-  const actions: TaskActions = {
+  function submitEdit(task: Task, text: string) {
+    setEditingId(null);
+    const parsed = parseTask(text);
+    if (!parsed.title.trim()) return;
+    persist({
+      ...task,
+      title: parsed.title.trim(),
+      due: parsed.due,
+      group: parsed.group,
+    });
+  }
+
+  const sections = useMemo(
+    () => sectionsFor(view, tasks),
+    [view, tasks],
+  );
+  const flatTasks = useMemo(
+    () => sections.flatMap((s) => s.items),
+    [sections],
+  );
+
+  // Navegação por teclado: ↑↓ seleciona, ↵ conclui, ⌫ exclui, E edita
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.metaKey && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        openQuickAdd();
+        return;
+      }
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
+      if (view.kind === "profile" || flatTasks.length === 0) return;
+
+      const index = flatTasks.findIndex((t) => t.id === selectedId);
+      const selected = index >= 0 ? flatTasks[index] : null;
+
+      switch (e.key) {
+        case "ArrowDown": {
+          e.preventDefault();
+          const next = flatTasks[Math.min(index + 1, flatTasks.length - 1)];
+          setSelectedId(next.id);
+          break;
+        }
+        case "ArrowUp": {
+          e.preventDefault();
+          const prev = flatTasks[index <= 0 ? 0 : index - 1];
+          setSelectedId(prev.id);
+          break;
+        }
+        case "Enter": {
+          if (!selected) return;
+          e.preventDefault();
+          const checkbox = document.querySelector<HTMLElement>(
+            `[data-task-id="${selected.id}"] [data-checkbox]`,
+          );
+          if (checkbox) toggleTask(selected, checkbox);
+          break;
+        }
+        case "Backspace":
+        case "Delete": {
+          if (!selected) return;
+          e.preventDefault();
+          const next = flatTasks[index + 1] ?? flatTasks[index - 1];
+          removeTask(selected);
+          setSelectedId(next?.id ?? null);
+          break;
+        }
+        case "e":
+        case "E": {
+          if (!selected) return;
+          e.preventDefault();
+          setEditingId(selected.id);
+          break;
+        }
+        case "Escape": {
+          setMenu(null);
+          setSelectedId(null);
+          break;
+        }
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
+  const actions: RowActions = {
     onToggle: toggleTask,
-    onContextMenu: (task, x, y) => setMenu({ task, x, y, confirming: false }),
+    onContextMenu: (task, x, y) => setMenu({ task, x, y }),
+    onSelect: (task) => setSelectedId(task.id),
+    onStartEdit: (task) => {
+      setSelectedId(task.id);
+      setEditingId(task.id);
+    },
+    onSubmitEdit: submitEdit,
+    onCancelEdit: () => setEditingId(null),
   };
 
   const groups = [...new Set(tasks.map((t) => t.group).filter(Boolean))].sort(
@@ -205,16 +315,16 @@ export default function MainApp() {
         </header>
 
         <div className="flex-1 overflow-y-auto px-5 py-2">
-          {!loaded ? null : view.kind === "today" ? (
-            <TodayView tasks={tasks} actions={actions} />
-          ) : view.kind === "agenda" ? (
-            <AgendaView tasks={tasks} actions={actions} />
-          ) : view.kind === "completed" ? (
-            <CompletedView tasks={tasks} actions={actions} />
-          ) : view.kind === "profile" ? (
+          {!loaded ? null : view.kind === "profile" ? (
             <ProfileView tasks={tasks} unlocked={ach ?? {}} />
           ) : (
-            <GroupView name={view.name} tasks={tasks} actions={actions} />
+            <TaskList
+              sections={sections}
+              view={view}
+              actions={actions}
+              selectedId={selectedId}
+              editingId={editingId}
+            />
           )}
         </div>
 
@@ -233,6 +343,20 @@ export default function MainApp() {
             Done
           </span>
           <span className="flex items-center gap-2">
+            {selectedId ? (
+              <span className="flex items-center gap-2 text-faint">
+                <span className="flex items-center gap-1">
+                  <Kbd>↵</Kbd> concluir
+                </span>
+                <span className="flex items-center gap-1">
+                  <Kbd>E</Kbd> editar
+                </span>
+                <span className="flex items-center gap-1">
+                  <Kbd>⌫</Kbd> excluir
+                </span>
+                <span className="text-white/10">|</span>
+              </span>
+            ) : null}
             <button
               onClick={openQuickAdd}
               className="flex items-center gap-1.5 rounded-md px-2 py-1 text-dim transition-colors duration-150 hover:bg-hover hover:text-ink"
@@ -242,20 +366,11 @@ export default function MainApp() {
               <Kbd>⌥</Kbd>
               <Kbd>␣</Kbd>
             </button>
-            <span className="text-white/10">|</span>
-            <button
-              onClick={openQuickAdd}
-              className="flex items-center gap-1.5 rounded-md px-2 py-1 text-faint transition-colors duration-150 hover:bg-hover hover:text-ink"
-            >
-              Adição rápida
-              <Kbd>⌘</Kbd>
-              <Kbd>K</Kbd>
-            </button>
           </span>
         </footer>
       </main>
 
-      {/* Menu de contexto: excluir com confirmação */}
+      {/* Menu de contexto */}
       {menu && (
         <>
           <div
@@ -270,29 +385,32 @@ export default function MainApp() {
             className="animate-fade-in fixed z-50 w-[200px] rounded-xl border border-white/10 bg-raised p-1 shadow-[0_12px_32px_rgba(0,0,0,0.45)]"
             style={{
               left: Math.min(menu.x, window.innerWidth - 210),
-              top: Math.min(menu.y, window.innerHeight - 56),
+              top: Math.min(menu.y, window.innerHeight - 92),
             }}
           >
             <button
-              onClick={() =>
-                menu.confirming
-                  ? removeTask(menu.task)
-                  : setMenu({ ...menu, confirming: true })
-              }
-              className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-colors duration-150 ${
-                menu.confirming
-                  ? "bg-danger-dim font-medium text-danger"
-                  : "text-ink hover:bg-hover"
-              }`}
+              onClick={() => {
+                setMenu(null);
+                setSelectedId(menu.task.id);
+                setEditingId(menu.task.id);
+              }}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-ink transition-colors duration-150 hover:bg-hover"
             >
-              <TrashIcon size={15} className={menu.confirming ? "" : "text-dim"} />
-              {menu.confirming ? "Confirmar exclusão?" : "Excluir tarefa"}
+              <PencilIcon size={15} className="text-dim" />
+              Editar tarefa
+            </button>
+            <button
+              onClick={() => removeTask(menu.task)}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-danger transition-colors duration-150 hover:bg-danger-dim"
+            >
+              <TrashIcon size={15} />
+              Excluir tarefa
             </button>
           </div>
         </>
       )}
 
-      <Toasts toasts={toasts} />
+      <Toasts toasts={toasts} onAction={runToastAction} />
     </div>
   );
 }

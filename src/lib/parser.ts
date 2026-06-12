@@ -109,6 +109,21 @@ export function parseTask(input: string, now: Date = new Date()): ParsedTask {
   return { title, due, group };
 }
 
+/** Texto editável "título, dd/mm/yyyy, grupo" que o parseTask reconstrói sem perdas. */
+export function toEditText(fields: {
+  title: string;
+  due: string | null;
+  group: string | null;
+}): string {
+  const parts = [fields.title];
+  if (fields.due) {
+    const [y, m, d] = fields.due.split("-");
+    parts.push(`${d}/${m}/${y}`);
+  }
+  if (fields.group) parts.push(fields.group);
+  return parts.join(", ");
+}
+
 export function formatDue(due: string, now: Date = new Date()): string {
   const today = startOfDay(now);
   const date = fromIsoDate(due);

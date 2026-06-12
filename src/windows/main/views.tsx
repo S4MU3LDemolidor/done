@@ -1,10 +1,16 @@
 import { formatDue, toIsoDate } from "../../lib/parser";
-import { TaskRow } from "./TaskRow";
+import { TaskRow, type RowActions } from "./TaskRow";
 import type { Task } from "../../lib/types";
+import type { View } from "./MainApp";
 
-export interface TaskActions {
-  onToggle: (task: Task, checkboxEl: HTMLElement) => void;
-  onContextMenu: (task: Task, x: number, y: number) => void;
+export interface TaskSection {
+  key: string;
+  label?: string;
+  count?: number;
+  tone?: "overdue";
+  /** Texto extra à direita por tarefa (ex.: data + XP nas concluídas) */
+  metaFor?: (t: Task) => string;
+  items: Task[];
 }
 
 const WEEKDAYS_SHORT = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
@@ -22,194 +28,157 @@ export function pendingTodayTasks(tasks: Task[], now = new Date()): Task[] {
   return tasks.filter((t) => !t.done && (!t.due || t.due <= today));
 }
 
-export function TodayView({
-  tasks,
-  actions,
-}: {
-  tasks: Task[];
-  actions: TaskActions;
-}) {
-  const today = toIsoDate(new Date());
-  const overdue = tasks
-    .filter((t) => !t.done && t.due && t.due < today)
-    .sort(byDue);
-  const dueToday = tasks.filter((t) => !t.done && t.due === today);
-  const noDate = tasks.filter((t) => !t.done && !t.due);
-  const doneToday = tasks.filter(
-    (t) => t.done && t.completedAt?.slice(0, 10) === today,
-  );
+/** Seções na mesma ordem em que são renderizadas — base da navegação por teclado. */
+export function sectionsFor(
+  view: View,
+  tasks: Task[],
+  now: Date = new Date(),
+): TaskSection[] {
+  switch (view.kind) {
+    case "today": {
+      const today = toIsoDate(now);
+      const overdue = tasks
+        .filter((t) => !t.done && t.due && t.due < today)
+        .sort(byDue);
+      const dueToday = tasks.filter((t) => !t.done && t.due === today);
+      const noDate = tasks.filter((t) => !t.done && !t.due);
+      const doneToday = tasks.filter(
+        (t) => t.done && t.completedAt?.slice(0, 10) === today,
+      );
+      return [
+        {
+          key: "overdue",
+          label: "Atrasadas",
+          tone: "overdue" as const,
+          count: overdue.length,
+          items: overdue,
+        },
+        { key: "due-today", label: "Hoje", count: dueToday.length, items: dueToday },
+        { key: "no-date", label: "Sem data", count: noDate.length, items: noDate },
+        {
+          key: "done-today",
+          label: "Concluídas hoje",
+          count: doneToday.length,
+          items: doneToday,
+        },
+      ].filter((s) => s.items.length > 0);
+    }
 
-  if (!overdue.length && !dueToday.length && !noDate.length && !doneToday.length) {
-    return <EmptyState text="Nada para hoje. Aproveite seu dia ✦" />;
+    case "agenda": {
+      return Array.from({ length: 7 }, (_, i) => {
+        const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+        const iso = toIsoDate(date);
+        return {
+          key: iso,
+          label: `${WEEKDAYS_SHORT[date.getDay()]} · ${formatDue(iso, now)}`,
+          count: 0,
+          items: tasks.filter((t) => !t.done && t.due === iso),
+        };
+      })
+        .map((s) => ({ ...s, count: s.items.length }))
+        .filter((s) => s.items.length > 0);
+    }
+
+    case "completed": {
+      const done = tasks
+        .filter((t) => t.done && t.completedAt)
+        .sort((a, b) => b.completedAt!.localeCompare(a.completedAt!));
+      return done.length === 0
+        ? []
+        : [
+            {
+              key: "done",
+              metaFor: (t: Task) =>
+                `${formatDue(t.completedAt!.slice(0, 10), now)} · +${t.xp} XP`,
+              items: done,
+            },
+          ];
+    }
+
+    case "group": {
+      const inGroup = tasks.filter((t) => t.group === view.name);
+      const pending = inGroup.filter((t) => !t.done).sort(byTitle);
+      const done = inGroup.filter((t) => t.done).sort(byTitle);
+      const sections: TaskSection[] = [];
+      if (pending.length > 0) sections.push({ key: "pending", items: pending });
+      if (done.length > 0)
+        sections.push({
+          key: "done",
+          label: "Concluídas",
+          count: done.length,
+          items: done,
+        });
+      return sections;
+    }
+
+    case "profile":
+      return [];
   }
-
-  return (
-    <div>
-      {overdue.length > 0 && (
-        <Section label="Atrasadas" count={overdue.length} tone="overdue">
-          {overdue.map((t) => (
-            <TaskRow key={t.id} task={t} {...actions} />
-          ))}
-        </Section>
-      )}
-      {dueToday.length > 0 && (
-        <Section label="Hoje" count={dueToday.length}>
-          {dueToday.map((t) => (
-            <TaskRow key={t.id} task={t} {...actions} />
-          ))}
-        </Section>
-      )}
-      {noDate.length > 0 && (
-        <Section label="Sem data" count={noDate.length}>
-          {noDate.map((t) => (
-            <TaskRow key={t.id} task={t} {...actions} />
-          ))}
-        </Section>
-      )}
-      {doneToday.length > 0 && (
-        <Section label="Concluídas hoje" count={doneToday.length}>
-          {doneToday.map((t) => (
-            <TaskRow key={t.id} task={t} {...actions} />
-          ))}
-        </Section>
-      )}
-    </div>
-  );
 }
 
-export function AgendaView({
-  tasks,
+export function emptyTextFor(view: View): string {
+  switch (view.kind) {
+    case "today":
+      return "Nada para hoje. Aproveite seu dia ✦";
+    case "agenda":
+      return "Semana livre. Que tal planejar algo? ✦";
+    case "completed":
+      return "Nenhuma tarefa concluída ainda. Você consegue ✦";
+    default:
+      return "Nenhuma tarefa neste grupo.";
+  }
+}
+
+export function TaskList({
+  sections,
+  view,
   actions,
+  selectedId,
+  editingId,
 }: {
-  tasks: Task[];
-  actions: TaskActions;
+  sections: TaskSection[];
+  view: View;
+  actions: RowActions;
+  selectedId: string | null;
+  editingId: string | null;
 }) {
-  const now = new Date();
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
-    return { date: d, iso: toIsoDate(d) };
-  });
-
-  const sections = days
-    .map(({ date, iso }) => ({
-      date,
-      iso,
-      items: tasks.filter((t) => !t.done && t.due === iso),
-    }))
-    .filter((s) => s.items.length > 0);
-
   if (sections.length === 0) {
-    return <EmptyState text="Semana livre. Que tal planejar algo? ✦" />;
-  }
-
-  return (
-    <div>
-      {sections.map(({ date, iso, items }) => (
-        <Section
-          key={iso}
-          label={`${WEEKDAYS_SHORT[date.getDay()]} · ${formatDue(iso, now)}`}
-          count={items.length}
-        >
-          {items.map((t) => (
-            <TaskRow key={t.id} task={t} {...actions} />
-          ))}
-        </Section>
-      ))}
-    </div>
-  );
-}
-
-export function CompletedView({
-  tasks,
-  actions,
-}: {
-  tasks: Task[];
-  actions: TaskActions;
-}) {
-  const done = tasks
-    .filter((t) => t.done && t.completedAt)
-    .sort((a, b) => b.completedAt!.localeCompare(a.completedAt!));
-
-  if (done.length === 0) {
-    return <EmptyState text="Nenhuma tarefa concluída ainda. Você consegue ✦" />;
+    return <EmptyState text={emptyTextFor(view)} />;
   }
 
   return (
     <div className="pt-2">
-      {done.map((t) => (
-        <TaskRow
-          key={t.id}
-          task={t}
-          {...actions}
-          meta={`${formatDue(t.completedAt!.slice(0, 10))} · +${t.xp} XP`}
-        />
-      ))}
-    </div>
-  );
-}
-
-export function GroupView({
-  name,
-  tasks,
-  actions,
-}: {
-  name: string;
-  tasks: Task[];
-  actions: TaskActions;
-}) {
-  const inGroup = tasks.filter((t) => t.group === name);
-  const pending = inGroup.filter((t) => !t.done).sort(byTitle);
-  const done = inGroup.filter((t) => t.done).sort(byTitle);
-
-  if (inGroup.length === 0) {
-    return <EmptyState text="Nenhuma tarefa neste grupo." />;
-  }
-
-  return (
-    <div className="pt-2">
-      {pending.map((t) => (
-        <TaskRow key={t.id} task={t} {...actions} />
-      ))}
-      {done.length > 0 && (
-        <Section label="Concluídas" count={done.length}>
-          {done.map((t) => (
-            <TaskRow key={t.id} task={t} {...actions} />
+      {sections.map((section) => (
+        <section key={section.key} className="mb-4">
+          {section.label && (
+            <h2 className="flex items-baseline gap-2 px-3 pt-4 pb-1.5">
+              <span
+                className={`text-[12px] font-semibold ${
+                  section.tone === "overdue" ? "text-overdue" : "text-dim"
+                }`}
+              >
+                {section.label}
+              </span>
+              {section.count !== undefined && (
+                <span className="text-[11px] text-faint">
+                  {section.count} {section.count === 1 ? "tarefa" : "tarefas"}
+                </span>
+              )}
+            </h2>
+          )}
+          {section.items.map((t) => (
+            <TaskRow
+              key={t.id}
+              task={t}
+              selected={t.id === selectedId}
+              editing={t.id === editingId}
+              meta={section.metaFor?.(t)}
+              {...actions}
+            />
           ))}
-        </Section>
-      )}
+        </section>
+      ))}
     </div>
-  );
-}
-
-function Section({
-  label,
-  count,
-  tone,
-  children,
-}: {
-  label: string;
-  count?: number;
-  tone?: "overdue";
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="mb-4">
-      <h2 className="flex items-baseline gap-2 px-3 pt-4 pb-1.5">
-        <span
-          className={`text-[12px] font-semibold ${
-            tone === "overdue" ? "text-overdue" : "text-dim"
-          }`}
-        >
-          {label}
-        </span>
-        {count !== undefined && (
-          <span className="text-[11px] text-faint">
-            {count} {count === 1 ? "tarefa" : "tarefas"}
-          </span>
-        )}
-      </h2>
-      {children}
-    </section>
   );
 }
 

@@ -1,4 +1,9 @@
-use tauri::{AppHandle, Emitter, Manager, RunEvent, WindowEvent};
+use tauri::{
+    menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem},
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    AppHandle, Emitter, Manager, RunEvent, WindowEvent,
+};
+use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 use tauri_plugin_global_shortcut::ShortcutState;
 
 fn toggle_quickadd(app: &AppHandle) {
@@ -22,11 +27,76 @@ fn show_main(app: &AppHandle) {
     }
 }
 
+fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
+    let autostart_enabled = app.autolaunch().is_enabled().unwrap_or(false);
+
+    let open_item = MenuItem::with_id(app, "open", "Abrir Done", true, None::<&str>)?;
+    let add_item =
+        MenuItem::with_id(app, "quickadd", "Nova tarefa", true, Some("Alt+Space"))?;
+    let autostart_item = CheckMenuItem::with_id(
+        app,
+        "autostart",
+        "Iniciar com o sistema",
+        true,
+        autostart_enabled,
+        None::<&str>,
+    )?;
+    let quit_item = PredefinedMenuItem::quit(app, Some("Encerrar Done"))?;
+    let menu = Menu::with_items(
+        app,
+        &[
+            &open_item,
+            &add_item,
+            &PredefinedMenuItem::separator(app)?,
+            &autostart_item,
+            &PredefinedMenuItem::separator(app)?,
+            &quit_item,
+        ],
+    )?;
+
+    let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/tray.png"))?;
+    TrayIconBuilder::with_id("done-tray")
+        .icon(icon)
+        .icon_as_template(true)
+        .menu(&menu)
+        .show_menu_on_left_click(false)
+        .on_menu_event(|app, event| match event.id().as_ref() {
+            "open" => show_main(app),
+            "quickadd" => toggle_quickadd(app),
+            "autostart" => {
+                let autolaunch = app.autolaunch();
+                if autolaunch.is_enabled().unwrap_or(false) {
+                    let _ = autolaunch.disable();
+                } else {
+                    let _ = autolaunch.enable();
+                }
+            }
+            _ => {}
+        })
+        .on_tray_icon_event(|tray, event| {
+            // Clique esquerdo no ícone alterna a barra de adição rápida
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Up,
+                ..
+            } = event
+            {
+                toggle_quickadd(tray.app_handle());
+            }
+        })
+        .build(app)?;
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_autostart::init(
+            MacosLauncher::LaunchAgent,
+            None,
+        ))
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_shortcuts(["Alt+Space"])
@@ -38,6 +108,10 @@ pub fn run() {
                 })
                 .build(),
         )
+        .setup(|app| {
+            setup_tray(app)?;
+            Ok(())
+        })
         .on_window_event(|window, event| {
             // Fechar a janela principal apenas a esconde (padrão macOS); ⌘Q encerra de verdade
             if window.label() == "main" {

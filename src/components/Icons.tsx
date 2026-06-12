@@ -86,6 +86,14 @@ export function SparkleIcon(p: IconProps) {
   );
 }
 
+export function PencilIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17l-1 3ZM13.5 6.5l3 3" />
+    </svg>
+  );
+}
+
 export function TrashIcon(p: IconProps) {
   return (
     <svg {...base(p)}>
