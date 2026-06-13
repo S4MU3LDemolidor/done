@@ -30,10 +30,10 @@ body,
   cursor: default;
 }
 
-/* Janela principal: translúcida sobre o material da janela (estilo Raycast) */
+/* Janela principal: vidro translúcido sobre o material da janela (estilo Raycast) */
 html[data-window="main"],
 html[data-window="main"] body {
-  background: rgba(26, 26, 28, 0.78);
+  background: rgba(24, 24, 27, 0.55);
   color: var(--color-ink);
 }
 

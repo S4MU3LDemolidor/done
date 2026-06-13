@@ -6,17 +6,28 @@ import { evaluateAchievements, streak, xpForCompletion } from "../../lib/game";
 import {
   deleteTask,
   loadAchievements,
+  loadGroupColors,
   loadTasks,
   saveAchievements,
+  saveGroupColors,
   saveTask,
   watchTasks,
   type AchievementState,
+  type GroupColors,
 } from "../../lib/store";
 import { fireworksAt } from "../../lib/fireworks";
 import { PencilIcon, PlusIcon, TrashIcon } from "../../components/Icons";
+import {
+  AchievementBadge,
+  SparkGlyph,
+  TrashGlyph,
+  WarnGlyph,
+} from "../../components/glyphs";
 import { Kbd } from "../../components/Kbd";
 import { Sidebar } from "./Sidebar";
 import { Toasts, type Toast } from "./Toasts";
+import { GroupColorProvider } from "./GroupColorContext";
+import { GroupEditor, type GroupEditorTarget } from "./GroupEditor";
 import { ACHIEVEMENTS } from "./achievements";
 import { ProfileView } from "./ProfileView";
 import {
@@ -25,6 +36,7 @@ import {
   sectionsFor,
 } from "./views";
 import type { RowActions } from "./TaskRow";
+import type { ReactNode } from "react";
 import type { Task } from "../../lib/types";
 
 export type View =
@@ -49,6 +61,8 @@ export default function MainApp() {
   const [menu, setMenu] = useState<ContextMenu | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [groupColors, setGroupColors] = useState<GroupColors>({});
+  const [groupEditor, setGroupEditor] = useState<GroupEditorTarget | null>(null);
   const toastId = useRef(0);
 
   const setView = useCallback((v: View) => {
@@ -75,6 +89,9 @@ export default function MainApp() {
     loadAchievements().then((a) => {
       if (!cancelled) setAch(a);
     });
+    loadGroupColors().then((c) => {
+      if (!cancelled) setGroupColors(c);
+    });
     watchTasks(reload).then((fn) => {
       if (cancelled) fn();
       else unwatch = fn;
@@ -86,9 +103,9 @@ export default function MainApp() {
   }, [reload]);
 
   const pushToast = useCallback(
-    (emoji: string, title: string, sub?: string, action?: Toast["action"]) => {
+    (icon: ReactNode, title: string, sub?: string, action?: Toast["action"]) => {
       const id = ++toastId.current;
-      setToasts((ts) => [...ts, { id, emoji, title, sub, action }]);
+      setToasts((ts) => [...ts, { id, icon, title, sub, action }]);
       setTimeout(
         () => setToasts((ts) => ts.filter((t) => t.id !== id)),
         action ? 5000 : 3200,
@@ -113,7 +130,7 @@ export default function MainApp() {
     for (const id of fresh) {
       updated[id] = now;
       pushToast(
-        ACHIEVEMENTS[id].emoji,
+        <AchievementBadge id={id} size={22} />,
         `Conquista: ${ACHIEVEMENTS[id].name}`,
         ACHIEVEMENTS[id].desc,
       );
@@ -130,7 +147,7 @@ export default function MainApp() {
       await saveTask(updated);
     } catch (err) {
       console.error("Falha ao salvar tarefa:", err);
-      pushToast("⚠️", "Não foi possível salvar", "Tente de novo");
+      pushToast(<WarnGlyph className="text-overdue" />, "Não foi possível salvar", "Tente de novo");
       reload();
     }
   }
@@ -147,10 +164,15 @@ export default function MainApp() {
         xp,
       };
       fireworksAt(checkboxEl, onTime);
-      pushToast("✦", `+${xp} XP`, onTime ? "concluída no prazo!" : undefined, {
-        label: "Desfazer",
-        run: () => persist({ ...task, done: false, completedAt: null, xp: 10 }),
-      });
+      pushToast(
+        <SparkGlyph className="text-accent" />,
+        `+${xp} XP`,
+        onTime ? "concluída no prazo!" : undefined,
+        {
+          label: "Desfazer",
+          run: () => persist({ ...task, done: false, completedAt: null, xp: 10 }),
+        },
+      );
       persist(completed);
     } else {
       persist({ ...task, done: false, completedAt: null, xp: 10 });
@@ -163,7 +185,7 @@ export default function MainApp() {
     if (selectedId === task.id) setSelectedId(null);
     try {
       await deleteTask(task.id);
-      pushToast("🗑️", "Tarefa excluída", task.title, {
+      pushToast(<TrashGlyph className="text-danger" />, "Tarefa excluída", task.title, {
         label: "Desfazer",
         run: () => {
           saveTask(task).catch((err) =>
@@ -173,9 +195,93 @@ export default function MainApp() {
       });
     } catch (err) {
       console.error("Falha ao excluir tarefa:", err);
-      pushToast("⚠️", "Não foi possível excluir", "Tente de novo");
+      pushToast(<WarnGlyph className="text-overdue" />, "Não foi possível excluir", "Tente de novo");
       reload();
     }
+  }
+
+  function setGroupColor(name: string, color: string) {
+    setGroupColors((prev) => {
+      const next = { ...prev, [name]: color };
+      saveGroupColors(next).catch((err) =>
+        console.error("Falha ao salvar cores de grupo:", err),
+      );
+      return next;
+    });
+  }
+
+  async function renameGroup(oldName: string, newName: string) {
+    setGroupEditor(null);
+    if (tasks.some((t) => t.group === newName)) {
+      pushToast(
+        <WarnGlyph className="text-overdue" />,
+        "Esse grupo já existe",
+        `"${newName}" já está em uso`,
+      );
+      return;
+    }
+    // Renomeia a cor salva
+    setGroupColors((prev) => {
+      if (!prev[oldName]) return prev;
+      const next = { ...prev, [newName]: prev[oldName] };
+      delete next[oldName];
+      saveGroupColors(next).catch((err) =>
+        console.error("Falha ao salvar cores de grupo:", err),
+      );
+      return next;
+    });
+    // Reescreve as tarefas do grupo
+    const affected = tasks.filter((t) => t.group === oldName);
+    setTasks((ts) =>
+      ts.map((t) => (t.group === oldName ? { ...t, group: newName } : t)),
+    );
+    for (const t of affected) {
+      try {
+        await saveTask({ ...t, group: newName });
+      } catch (err) {
+        console.error("Falha ao renomear grupo na tarefa:", err);
+      }
+    }
+    if (view.kind === "group" && view.name === oldName) {
+      setViewRaw({ kind: "group", name: newName });
+    }
+  }
+
+  async function deleteGroup(name: string) {
+    setGroupEditor(null);
+    const affected = tasks.filter((t) => t.group === name);
+    if (affected.length === 0) return;
+    setTasks((ts) =>
+      ts.map((t) => (t.group === name ? { ...t, group: null } : t)),
+    );
+    if (view.kind === "group" && view.name === name) setView({ kind: "today" });
+    for (const t of affected) {
+      try {
+        await saveTask({ ...t, group: null });
+      } catch (err) {
+        console.error("Falha ao remover grupo da tarefa:", err);
+      }
+    }
+    pushToast(
+      <TrashGlyph className="text-danger" />,
+      "Grupo excluído",
+      `${affected.length} ${affected.length === 1 ? "tarefa" : "tarefas"} sem grupo`,
+      {
+        label: "Desfazer",
+        run: () => {
+          setTasks((ts) =>
+            ts.map((t) =>
+              affected.some((a) => a.id === t.id) ? { ...t, group: name } : t,
+            ),
+          );
+          affected.forEach((t) =>
+            saveTask(t).catch((err) =>
+              console.error("Falha ao restaurar grupo:", err),
+            ),
+          );
+        },
+      },
+    );
   }
 
   function submitEdit(task: Task, text: string) {
@@ -282,6 +388,7 @@ export default function MainApp() {
   const { title, subtitle } = headerFor(view, tasks, todayCount);
 
   return (
+    <GroupColorProvider value={groupColors}>
     <div className="relative flex h-full overflow-hidden">
       {/* Faixa de arrasto da janela (atrás dos semáforos do macOS) */}
       <div data-tauri-drag-region className="absolute inset-x-0 top-0 z-20 h-9" />
@@ -292,6 +399,7 @@ export default function MainApp() {
         groups={groups}
         todayCount={todayCount}
         streakDays={streak(tasks)}
+        onEditGroup={(name, x, y) => setGroupEditor({ name, x, y })}
       />
 
       <main className="flex min-w-0 flex-1 flex-col">
@@ -410,8 +518,20 @@ export default function MainApp() {
         </>
       )}
 
+      {groupEditor && (
+        <GroupEditor
+          target={groupEditor}
+          colors={groupColors}
+          onRename={renameGroup}
+          onSetColor={setGroupColor}
+          onDelete={deleteGroup}
+          onClose={() => setGroupEditor(null)}
+        />
+      )}
+
       <Toasts toasts={toasts} onAction={runToastAction} />
     </div>
+    </GroupColorProvider>
   );
 }
 

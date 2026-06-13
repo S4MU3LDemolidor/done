@@ -1,5 +1,6 @@
 import { levelForXp, streak, totalXp } from "../../lib/game";
 import { FlameIcon, CheckCircleIcon, SparkleIcon } from "../../components/Icons";
+import { AchievementBadge } from "../../components/glyphs";
 import { ACHIEVEMENTS, ACHIEVEMENT_IDS } from "./achievements";
 import type { AchievementState } from "../../lib/store";
 import type { Task } from "../../lib/types";
@@ -73,11 +74,13 @@ export function ProfileView({
             <div
               key={id}
               className={`rounded-xl border border-line bg-raised p-4 transition-opacity duration-150 ${
-                isUnlocked ? "" : "opacity-40 grayscale"
+                isUnlocked ? "" : "opacity-70"
               }`}
             >
-              <div className="text-[22px]">{isUnlocked ? meta.emoji : "🔒"}</div>
-              <div className="mt-2 text-[13px] font-semibold text-ink">
+              <AchievementBadge id={id} size={30} locked={!isUnlocked} />
+              <div
+                className={`mt-2 text-[13px] font-semibold ${isUnlocked ? "text-ink" : "text-dim"}`}
+              >
                 {meta.name}
               </div>
               <div className="mt-0.5 text-[12px] leading-snug text-dim">

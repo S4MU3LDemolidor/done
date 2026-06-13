@@ -1,6 +1,8 @@
+import type { ReactNode } from "react";
+
 export interface Toast {
   id: number;
-  emoji: string;
+  icon: ReactNode;
   title: string;
   sub?: string;
   action?: { label: string; run: () => void };
@@ -20,7 +22,9 @@ export function Toasts({
           key={t.id}
           className="animate-toast-in pointer-events-auto flex items-center gap-3 rounded-xl border border-white/10 bg-raised px-4 py-3 shadow-[0_12px_32px_rgba(0,0,0,0.4)]"
         >
-          <span className="text-[18px]">{t.emoji}</span>
+          <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center">
+            {t.icon}
+          </span>
           <div>
             <div className="text-[13px] font-semibold text-ink">{t.title}</div>
             {t.sub && <div className="text-[12px] text-dim">{t.sub}</div>}

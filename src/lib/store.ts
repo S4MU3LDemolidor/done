@@ -77,3 +77,22 @@ export async function watchTasks(onChange: () => void): Promise<() => void> {
   await ensureDirs();
   return watch(await tasksDir(), onChange, { delayMs: 250 });
 }
+
+/** Cores escolhidas pelo usuário por grupo: { "casa": "#FF6363", ... } */
+export type GroupColors = Record<string, string>;
+
+export async function loadGroupColors(): Promise<GroupColors> {
+  const path = await join(await baseDir(), "groups.json");
+  try {
+    if (!(await exists(path))) return {};
+    return JSON.parse(await readTextFile(path)) as GroupColors;
+  } catch {
+    return {};
+  }
+}
+
+export async function saveGroupColors(colors: GroupColors): Promise<void> {
+  await ensureDirs();
+  const path = await join(await baseDir(), "groups.json");
+  await writeTextFile(path, JSON.stringify(colors, null, 2));
+}

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { formatDue, isOverdue, toEditText } from "../../lib/parser";
-import { groupColor } from "../../lib/colors";
+import { useGroupColor } from "./GroupColorContext";
 import type { Task } from "../../lib/types";
 
 export interface RowActions {
@@ -115,17 +115,7 @@ export function TaskRow({
       </span>
 
       <span className="flex shrink-0 items-center gap-2.5 text-[12px]">
-        {task.group && (
-          <span
-            className="rounded-[5px] px-2 py-0.5 text-[11px] font-medium"
-            style={{
-              background: `${groupColor(task.group)}26`,
-              color: groupColor(task.group),
-            }}
-          >
-            {task.group}
-          </span>
-        )}
+        {task.group && <GroupPill name={task.group} />}
         {meta ? (
           <span className="font-medium text-accent">{meta}</span>
         ) : task.done ? (
@@ -137,5 +127,17 @@ export function TaskRow({
         ) : null}
       </span>
     </div>
+  );
+}
+
+function GroupPill({ name }: { name: string }) {
+  const color = useGroupColor(name);
+  return (
+    <span
+      className="rounded-[5px] px-2 py-0.5 text-[11px] font-medium"
+      style={{ background: `${color}26`, color }}
+    >
+      {name}
+    </span>
   );
 }

@@ -3,6 +3,7 @@ import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { parseTask, formatDue, toLocalIsoDateTime } from "../lib/parser";
 import { saveTask } from "../lib/store";
 import { SparkleIcon } from "../components/Icons";
+import { DateGlyph, SparkGlyph, TagGlyph, TaskGlyph } from "../components/glyphs";
 import { Kbd } from "../components/Kbd";
 import type { Task } from "../lib/types";
 
@@ -70,7 +71,7 @@ export default function QuickAdd() {
   }
 
   return (
-    <div className="relative flex h-full flex-col overflow-hidden rounded-[16px] border border-white/10 bg-[rgba(28,28,30,0.72)] shadow-[0_24px_60px_rgba(0,0,0,0.45)]">
+    <div className="relative flex h-full flex-col overflow-hidden rounded-[16px] border border-white/[0.12] bg-[rgba(30,30,34,0.5)] shadow-[0_24px_60px_rgba(0,0,0,0.5)]">
       {/* Linha do input: bloco de ícone + campo grande */}
       <div className="flex h-[56px] shrink-0 items-center gap-3 px-3.5">
         <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[8px] border border-white/10 bg-white/[0.05]">
@@ -95,10 +96,23 @@ export default function QuickAdd() {
         {text.trim() ? (
           <>
             {parsed.title.trim() && (
-              <Chip key={`t-${parsed.title}`}>📋 {truncate(parsed.title.trim(), 32)}</Chip>
+              <Chip key={`t-${parsed.title}`}>
+                <TaskGlyph size={14} className="text-accent" />
+                {truncate(parsed.title.trim(), 32)}
+              </Chip>
             )}
-            {parsed.due && <Chip key={`d-${parsed.due}`}>📅 {formatDue(parsed.due)}</Chip>}
-            {parsed.group && <Chip key={`g-${parsed.group}`}>🏷 {parsed.group}</Chip>}
+            {parsed.due && (
+              <Chip key={`d-${parsed.due}`}>
+                <DateGlyph size={14} className="text-accent" />
+                {formatDue(parsed.due)}
+              </Chip>
+            )}
+            {parsed.group && (
+              <Chip key={`g-${parsed.group}`}>
+                <TagGlyph size={14} className="text-accent" />
+                {parsed.group}
+              </Chip>
+            )}
           </>
         ) : (
           <span className="text-faint">
@@ -133,8 +147,8 @@ export default function QuickAdd() {
 
       {/* Estado de sucesso */}
       {saved && (
-        <div className="animate-fade-in absolute inset-0 flex items-center justify-center gap-2.5 bg-[rgba(28,28,30,0.92)]">
-          <span className="animate-check-pop text-[20px] text-mint">✓</span>
+        <div className="animate-fade-in absolute inset-0 flex items-center justify-center gap-2.5 bg-[rgba(28,28,30,0.86)] backdrop-blur-xl">
+          <SparkGlyph size={22} className="animate-check-pop text-accent" />
           <span className="text-[16px] font-medium text-ink">
             Tarefa adicionada
           </span>
@@ -146,7 +160,7 @@ export default function QuickAdd() {
 
 function Chip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="animate-chip-in rounded-md bg-white/[0.07] px-2 py-1 font-medium text-dim">
+    <span className="animate-chip-in flex items-center gap-1.5 rounded-md bg-white/[0.07] py-1 pr-2.5 pl-2 font-medium text-dim">
       {children}
     </span>
   );

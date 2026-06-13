@@ -7,7 +7,7 @@ import {
   SunIcon,
   UserIcon,
 } from "../../components/Icons";
-import { groupColor } from "../../lib/colors";
+import { useGroupColor } from "./GroupColorContext";
 import type { View } from "./MainApp";
 
 interface SidebarProps {
@@ -16,6 +16,7 @@ interface SidebarProps {
   groups: string[];
   todayCount: number;
   streakDays: number;
+  onEditGroup: (name: string, x: number, y: number) => void;
 }
 
 export function Sidebar({
@@ -24,13 +25,14 @@ export function Sidebar({
   groups,
   todayCount,
   streakDays,
+  onEditGroup,
 }: SidebarProps) {
   const [groupsOpen, setGroupsOpen] = useState(true);
 
   return (
     <aside
       data-tauri-drag-region
-      className="flex w-[210px] shrink-0 flex-col border-r border-line bg-black/[0.18] pt-11"
+      className="flex w-[210px] shrink-0 flex-col border-r border-line bg-black/[0.22] pt-11"
     >
       <div
         data-tauri-drag-region
@@ -59,17 +61,12 @@ export function Sidebar({
             </button>
             {groupsOpen &&
               groups.map((g) => (
-                <NavItem
+                <GroupNavItem
                   key={g}
+                  name={g}
                   active={view.kind === "group" && view.name === g}
                   onClick={() => setView({ kind: "group", name: g })}
-                  icon={
-                    <span
-                      className="mx-0.5 h-[7px] w-[7px] rounded-full"
-                      style={{ background: groupColor(g) }}
-                    />
-                  }
-                  label={g}
+                  onEdit={(x, y) => onEditGroup(g, x, y)}
                 />
               ))}
           </>
@@ -107,15 +104,48 @@ export function Sidebar({
   );
 }
 
+function GroupNavItem({
+  name,
+  active,
+  onClick,
+  onEdit,
+}: {
+  name: string;
+  active: boolean;
+  onClick: () => void;
+  onEdit: (x: number, y: number) => void;
+}) {
+  const color = useGroupColor(name);
+  return (
+    <NavItem
+      active={active}
+      onClick={onClick}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        onEdit(e.clientX, e.clientY);
+      }}
+      icon={
+        <span
+          className="mx-0.5 h-[7px] w-[7px] rounded-full"
+          style={{ background: color }}
+        />
+      }
+      label={name}
+    />
+  );
+}
+
 function NavItem({
   active,
   onClick,
+  onContextMenu,
   icon,
   label,
   badge,
 }: {
   active: boolean;
   onClick: () => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
   icon: React.ReactNode;
   label: string;
   badge?: string;
@@ -123,6 +153,7 @@ function NavItem({
   return (
     <button
       onClick={onClick}
+      onContextMenu={onContextMenu}
       className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-[13px] transition-colors duration-150 ${
         active
           ? "bg-accent-dim font-medium text-accent"
