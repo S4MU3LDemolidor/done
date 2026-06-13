@@ -40,7 +40,7 @@
         "skipTaskbar": true,
         "resizable": false,
         "center": true,
-        "shadow": true,
+        "shadow": false,
         "visibleOnAllWorkspaces": true,
         "windowEffects": {
           "effects": ["hudWindow"],
