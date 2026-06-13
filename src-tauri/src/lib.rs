@@ -110,6 +110,9 @@ pub fn run() {
         )
         .setup(|app| {
             setup_tray(app)?;
+            // App acessório: vive só na barra de menus, sem ícone no Dock (estilo Raycast)
+            #[cfg(target_os = "macos")]
+            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             Ok(())
         })
         .on_window_event(|window, event| {

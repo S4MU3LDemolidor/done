@@ -30,10 +30,13 @@ body,
   cursor: default;
 }
 
-/* Janela principal: vidro translúcido sobre o material da janela (estilo Raycast) */
+/* Janela principal: transparente para o material da janela aparecer.
+   O scrim translúcido fica numa única camada (.app-glass), senão html+body
+   empilham e o vidro some. */
 html[data-window="main"],
-html[data-window="main"] body {
-  background: rgba(24, 24, 27, 0.55);
+html[data-window="main"] body,
+html[data-window="main"] #root {
+  background: transparent;
   color: var(--color-ink);
 }
 
