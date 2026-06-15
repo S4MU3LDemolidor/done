@@ -147,7 +147,7 @@ export default function QuickAdd() {
   }
 
   return (
-    <div className="relative flex h-full flex-col overflow-hidden rounded-[16px] border border-white/[0.12] bg-[rgba(30,30,34,0.34)]">
+    <div className="relative flex h-full flex-col overflow-hidden rounded-[16px] border border-white/[0.12] bg-[rgba(30,30,34,0.7)]">
       {/* Linha do input: bloco de ícone + campo grande */}
       <div className="flex h-[56px] shrink-0 items-center gap-3 px-3.5">
         <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[8px] border border-white/10 bg-white/[0.05]">

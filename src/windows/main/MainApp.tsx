@@ -389,7 +389,7 @@ export default function MainApp() {
 
   return (
     <GroupColorProvider value={groupColors}>
-    <div className="app-glass relative flex h-full overflow-hidden bg-[rgba(24,24,27,0.42)]">
+    <div className="app-glass relative flex h-full overflow-hidden bg-[rgba(24,24,27,0.78)]">
       {/* Faixa de arrasto da janela (atrás dos semáforos do macOS) */}
       <div data-tauri-drag-region className="absolute inset-x-0 top-0 z-20 h-9" />
 
