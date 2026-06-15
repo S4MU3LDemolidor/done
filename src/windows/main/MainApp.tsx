@@ -30,6 +30,7 @@ import { GroupColorProvider } from "./GroupColorContext";
 import { GroupEditor, type GroupEditorTarget } from "./GroupEditor";
 import { ACHIEVEMENTS } from "./achievements";
 import { ProfileView } from "./ProfileView";
+import { CalendarView } from "./CalendarView";
 import {
   TaskList,
   pendingTodayTasks,
@@ -425,6 +426,13 @@ export default function MainApp() {
         <div className="flex-1 overflow-y-auto px-5 py-2">
           {!loaded ? null : view.kind === "profile" ? (
             <ProfileView tasks={tasks} unlocked={ach ?? {}} />
+          ) : view.kind === "agenda" ? (
+            <CalendarView
+              tasks={tasks}
+              actions={actions}
+              selectedId={selectedId}
+              editingId={editingId}
+            />
           ) : (
             <TaskList
               sections={sections}
@@ -559,7 +567,7 @@ function headerFor(
             : `${todayCount} ${todayCount === 1 ? "tarefa" : "tarefas"}`,
       };
     case "agenda":
-      return { title: "Agenda", subtitle: "próximos 7 dias" };
+      return { title: "Agenda", subtitle: null };
     case "completed": {
       const n = tasks.filter((t) => t.done).length;
       return {

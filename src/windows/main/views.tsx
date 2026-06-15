@@ -13,8 +13,6 @@ export interface TaskSection {
   items: Task[];
 }
 
-const WEEKDAYS_SHORT = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
-
 function byDue(a: Task, b: Task): number {
   return (a.due ?? "9999").localeCompare(b.due ?? "9999");
 }
@@ -64,20 +62,8 @@ export function sectionsFor(
       ].filter((s) => s.items.length > 0);
     }
 
-    case "agenda": {
-      return Array.from({ length: 7 }, (_, i) => {
-        const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
-        const iso = toIsoDate(date);
-        return {
-          key: iso,
-          label: `${WEEKDAYS_SHORT[date.getDay()]} · ${formatDue(iso, now)}`,
-          count: 0,
-          items: tasks.filter((t) => !t.done && t.due === iso),
-        };
-      })
-        .map((s) => ({ ...s, count: s.items.length }))
-        .filter((s) => s.items.length > 0);
-    }
+    case "agenda":
+      return []; // a Agenda agora é renderizada pelo CalendarView
 
     case "completed": {
       const done = tasks

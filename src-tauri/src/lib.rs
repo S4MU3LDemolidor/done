@@ -4,7 +4,7 @@ use tauri::{
     AppHandle, Emitter, Manager, RunEvent, WindowEvent,
 };
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
-use tauri_plugin_global_shortcut::ShortcutState;
+use tauri_plugin_global_shortcut::{Modifiers, ShortcutState};
 
 fn toggle_quickadd(app: &AppHandle) {
     let Some(win) = app.get_webview_window("quickadd") else {
@@ -99,10 +99,17 @@ pub fn run() {
         ))
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
-                .with_shortcuts(["Alt+Space"])
+                // Alt+Space → adição rápida; Cmd+Alt+Space → abre a janela principal
+                .with_shortcuts(["Alt+Space", "Cmd+Alt+Space"])
                 .expect("invalid shortcut definition")
-                .with_handler(|app, _shortcut, event| {
-                    if event.state() == ShortcutState::Pressed {
+                .with_handler(|app, shortcut, event| {
+                    if event.state() != ShortcutState::Pressed {
+                        return;
+                    }
+                    // Cmd (SUPER) presente distingue o atalho da janela principal
+                    if shortcut.mods.contains(Modifiers::SUPER) {
+                        show_main(app);
+                    } else {
                         toggle_quickadd(app);
                     }
                 })
