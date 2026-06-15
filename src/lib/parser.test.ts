@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
   formatDue,
+  isDateText,
   isOverdue,
   parseTask,
   toEditText,
@@ -185,6 +186,24 @@ describe("isOverdue", () => {
 describe("toIsoDate", () => {
   test("formata em horário local, não UTC", () => {
     expect(toIsoDate(new Date(2026, 0, 1, 0, 5))).toBe("2026-01-01");
+  });
+});
+
+describe("isDateText — o segmento digitado parece uma data?", () => {
+  test("datas reconhecidas são true", () => {
+    expect(isDateText("15/06", NOW)).toBe(true);
+    expect(isDateText("25/12/2026", NOW)).toBe(true);
+    expect(isDateText("hoje", NOW)).toBe(true);
+    expect(isDateText("amanhã", NOW)).toBe(true);
+    expect(isDateText("sexta", NOW)).toBe(true);
+    expect(isDateText("  sexta  ", NOW)).toBe(true);
+  });
+
+  test("grupos e texto vazio são false", () => {
+    expect(isDateText("casa", NOW)).toBe(false);
+    expect(isDateText("trabalho", NOW)).toBe(false);
+    expect(isDateText("", NOW)).toBe(false);
+    expect(isDateText("Lojas Ricardo's", NOW)).toBe(false);
   });
 });
 

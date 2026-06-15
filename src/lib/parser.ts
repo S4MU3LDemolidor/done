@@ -89,6 +89,12 @@ function parseDateSegment(segment: string, now: Date): string | null {
   return null;
 }
 
+/** O segmento digitado parece uma data (dd/mm, hoje, sexta…)? Usado para decidir
+ *  quando sugerir grupos na barra de adição rápida. */
+export function isDateText(segment: string, now: Date = new Date()): boolean {
+  return parseDateSegment(segment.trim(), now) !== null;
+}
+
 export function parseTask(input: string, now: Date = new Date()): ParsedTask {
   const segments = input.split(",").map((s) => s.trim());
   const title = segments[0] ?? "";
