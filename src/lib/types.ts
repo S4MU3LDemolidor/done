@@ -22,3 +22,13 @@ export type AchievementId =
   | "streak_30"
   | "first_group"
   | "level_5";
+
+export interface Note {
+  id: string;
+  title: string;
+  body: string; // markdown
+  linkedTasks: string[]; // task uuids
+  linkedGroups: string[]; // group names
+  created: string; // ISO 8601
+  updatedAt: string; // ISO 8601
+}
