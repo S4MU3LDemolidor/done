@@ -17,6 +17,7 @@ interface TaskRowProps extends RowActions {
   selected: boolean;
   editing: boolean;
   meta?: string;
+  hideGroup?: boolean;
 }
 
 export function TaskRow({
@@ -24,6 +25,7 @@ export function TaskRow({
   selected,
   editing,
   meta,
+  hideGroup,
   onToggle,
   onContextMenu,
   onSelect,
@@ -115,7 +117,7 @@ export function TaskRow({
       </span>
 
       <span className="flex shrink-0 items-center gap-2.5 text-[12px]">
-        {task.group && <GroupPill name={task.group} />}
+        {task.group && !hideGroup && <GroupPill name={task.group} />}
         {meta ? (
           <span className="font-medium text-accent">{meta}</span>
         ) : task.done ? (

@@ -4,6 +4,7 @@ import {
   CheckCircleIcon,
   ChevronIcon,
   FlameIcon,
+  GridIcon,
   SunIcon,
   UserIcon,
 } from "../../components/Icons";
@@ -48,6 +49,12 @@ export function Sidebar({
           icon={<SunIcon size={16} />}
           label="Hoje"
           badge={todayCount > 0 ? String(todayCount) : undefined}
+        />
+        <NavItem
+          active={view.kind === "all"}
+          onClick={() => setView({ kind: "all" })}
+          icon={<GridIcon size={16} />}
+          label="Tudo"
         />
 
         {groups.length > 0 && (

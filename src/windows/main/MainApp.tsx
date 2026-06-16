@@ -31,6 +31,7 @@ import { GroupEditor, type GroupEditorTarget } from "./GroupEditor";
 import { ACHIEVEMENTS } from "./achievements";
 import { ProfileView } from "./ProfileView";
 import { CalendarView } from "./CalendarView";
+import { Dashboard } from "./Dashboard";
 import {
   TaskList,
   pendingTodayTasks,
@@ -42,6 +43,7 @@ import type { Task } from "../../lib/types";
 
 export type View =
   | { kind: "today" }
+  | { kind: "all" }
   | { kind: "agenda" }
   | { kind: "completed" }
   | { kind: "profile" }
@@ -434,13 +436,18 @@ export default function MainApp() {
               editingId={editingId}
             />
           ) : (
-            <TaskList
-              sections={sections}
-              view={view}
-              actions={actions}
-              selectedId={selectedId}
-              editingId={editingId}
-            />
+            <>
+              {view.kind === "all" && (
+                <Dashboard tasks={tasks} groupCount={groups.length} />
+              )}
+              <TaskList
+                sections={sections}
+                view={view}
+                actions={actions}
+                selectedId={selectedId}
+                editingId={editingId}
+              />
+            </>
           )}
         </div>
 
@@ -566,6 +573,8 @@ function headerFor(
             ? "tudo em dia"
             : `${todayCount} ${todayCount === 1 ? "tarefa" : "tarefas"}`,
       };
+    case "all":
+      return { title: "Tudo", subtitle: null };
     case "agenda":
       return { title: "Agenda", subtitle: null };
     case "completed": {

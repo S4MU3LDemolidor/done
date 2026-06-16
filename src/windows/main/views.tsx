@@ -8,6 +8,8 @@ export interface TaskSection {
   label?: string;
   count?: number;
   tone?: "overdue";
+  /** Esconde a etiqueta de grupo nas linhas (quando o título da seção já é o grupo) */
+  hideGroupPill?: boolean;
   /** Texto extra à direita por tarefa (ex.: data + XP nas concluídas) */
   metaFor?: (t: Task) => string;
   items: Task[];
@@ -97,6 +99,32 @@ export function sectionsFor(
       return sections;
     }
 
+    case "all": {
+      const groupNames = [
+        ...new Set(tasks.map((t) => t.group).filter(Boolean) as string[]),
+      ].sort((a, b) => a.localeCompare(b, "pt-BR"));
+      const sections: TaskSection[] = [];
+      const sectionFor = (key: string, label: string, items: Task[]) => {
+        const pending = items.filter((t) => !t.done).sort(byDue);
+        const done = items.filter((t) => t.done).sort(byTitle);
+        return {
+          key,
+          label,
+          count: items.length,
+          hideGroupPill: true,
+          items: [...pending, ...done],
+        };
+      };
+      for (const g of groupNames) {
+        sections.push(sectionFor(g, g, tasks.filter((t) => t.group === g)));
+      }
+      const ungrouped = tasks.filter((t) => !t.group);
+      if (ungrouped.length > 0) {
+        sections.push(sectionFor("__none", "Sem grupo", ungrouped));
+      }
+      return sections;
+    }
+
     case "profile":
       return [];
   }
@@ -110,6 +138,8 @@ export function emptyTextFor(view: View): string {
       return "Semana livre. Que tal planejar algo? ✦";
     case "completed":
       return "Nenhuma tarefa concluída ainda. Você consegue ✦";
+    case "all":
+      return "Nenhuma tarefa ainda. Adicione a primeira ✦";
     default:
       return "Nenhuma tarefa neste grupo.";
   }
@@ -159,6 +189,7 @@ export function TaskList({
               selected={t.id === selectedId}
               editing={t.id === editingId}
               meta={section.metaFor?.(t)}
+              hideGroup={section.hideGroupPill}
               {...actions}
             />
           ))}

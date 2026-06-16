@@ -70,6 +70,17 @@ export function FlameIcon(p: IconProps) {
   );
 }
 
+export function GridIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <rect x="4" y="4" width="7" height="7" rx="1.5" />
+      <rect x="13" y="4" width="7" height="7" rx="1.5" />
+      <rect x="4" y="13" width="7" height="7" rx="1.5" />
+      <rect x="13" y="13" width="7" height="7" rx="1.5" />
+    </svg>
+  );
+}
+
 export function PlusIcon(p: IconProps) {
   return (
     <svg {...base(p)}>
