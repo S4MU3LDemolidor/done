@@ -9,24 +9,32 @@ import {
   UserIcon,
 } from "../../components/Icons";
 import { useGroupColor } from "./GroupColorContext";
+import { NotesSidebarSection } from "./NotesSidebarSection";
 import type { View } from "./MainApp";
+import type { Note } from "../../lib/types";
 
 interface SidebarProps {
   view: View;
   setView: (v: View) => void;
   groups: string[];
+  notes: Note[];
   todayCount: number;
   streakDays: number;
   onEditGroup: (name: string, x: number, y: number) => void;
+  onOpenNote: (id: string) => void;
+  onNoteContextMenu: (id: string, x: number, y: number) => void;
 }
 
 export function Sidebar({
   view,
   setView,
   groups,
+  notes,
   todayCount,
   streakDays,
   onEditGroup,
+  onOpenNote,
+  onNoteContextMenu,
 }: SidebarProps) {
   const [groupsOpen, setGroupsOpen] = useState(true);
 
@@ -91,6 +99,12 @@ export function Sidebar({
             onClick={() => setView({ kind: "completed" })}
             icon={<CheckCircleIcon size={16} />}
             label="Concluídas"
+          />
+          <NotesSidebarSection
+            notes={notes}
+            activeId={view.kind === "note" ? view.id : null}
+            onOpen={onOpenNote}
+            onContextMenu={onNoteContextMenu}
           />
           <NavItem
             active={view.kind === "profile"}

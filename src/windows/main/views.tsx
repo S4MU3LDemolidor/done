@@ -127,6 +127,10 @@ export function sectionsFor(
 
     case "profile":
       return [];
+
+    case "notes":
+    case "note":
+      return [];
   }
 }
 

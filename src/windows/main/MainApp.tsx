@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { WebviewWindow, getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { emitTo } from "@tauri-apps/api/event";
 import { parseTask, toIsoDate, toLocalIsoDateTime } from "../../lib/parser";
 import { evaluateAchievements, streak, xpForCompletion } from "../../lib/game";
@@ -15,6 +15,12 @@ import {
   type AchievementState,
   type GroupColors,
 } from "../../lib/store";
+import {
+  deleteNote,
+  loadNotes,
+  saveNote,
+  watchNotes,
+} from "../../lib/notesStore";
 import { fireworksAt } from "../../lib/fireworks";
 import { PencilIcon, PlusIcon, TrashIcon } from "../../components/Icons";
 import {
@@ -32,6 +38,7 @@ import { ACHIEVEMENTS } from "./achievements";
 import { ProfileView } from "./ProfileView";
 import { CalendarView } from "./CalendarView";
 import { Dashboard } from "./Dashboard";
+import { NotesView } from "./NotesView";
 import {
   TaskList,
   pendingTodayTasks,
@@ -39,7 +46,7 @@ import {
 } from "./views";
 import type { RowActions } from "./TaskRow";
 import type { ReactNode } from "react";
-import type { Task } from "../../lib/types";
+import type { Note, Task } from "../../lib/types";
 
 export type View =
   | { kind: "today" }
@@ -47,7 +54,9 @@ export type View =
   | { kind: "agenda" }
   | { kind: "completed" }
   | { kind: "profile" }
-  | { kind: "group"; name: string };
+  | { kind: "group"; name: string }
+  | { kind: "notes" }
+  | { kind: "note"; id: string };
 
 interface ContextMenu {
   task: Task;
@@ -66,6 +75,9 @@ export default function MainApp() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [groupColors, setGroupColors] = useState<GroupColors>({});
   const [groupEditor, setGroupEditor] = useState<GroupEditorTarget | null>(null);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [noteContextMenu, setNoteContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [renamingNoteId, setRenamingNoteId] = useState<string | null>(null);
   const toastId = useRef(0);
 
   const setView = useCallback((v: View) => {
@@ -84,11 +96,21 @@ export default function MainApp() {
     }
   }, []);
 
-  // Carga inicial + observador da pasta de tarefas
+  const reloadNotes = useCallback(async () => {
+    try {
+      setNotes(await loadNotes());
+    } catch (err) {
+      console.error("Falha ao carregar notas:", err);
+    }
+  }, []);
+
+  // Carga inicial + observador da pasta de tarefas e notas
   useEffect(() => {
     let cancelled = false;
-    let unwatch: (() => void) | undefined;
+    let unwatchTasks: (() => void) | undefined;
+    let unwatchNotes: (() => void) | undefined;
     reload();
+    reloadNotes();
     loadAchievements().then((a) => {
       if (!cancelled) setAch(a);
     });
@@ -97,13 +119,18 @@ export default function MainApp() {
     });
     watchTasks(reload).then((fn) => {
       if (cancelled) fn();
-      else unwatch = fn;
+      else unwatchTasks = fn;
+    });
+    watchNotes(reloadNotes).then((fn) => {
+      if (cancelled) fn();
+      else unwatchNotes = fn;
     });
     return () => {
       cancelled = true;
-      unwatch?.();
+      unwatchTasks?.();
+      unwatchNotes?.();
     };
-  }, [reload]);
+  }, [reload, reloadNotes]);
 
   const pushToast = useCallback(
     (icon: ReactNode, title: string, sub?: string, action?: Toast["action"]) => {
@@ -120,6 +147,53 @@ export default function MainApp() {
   function runToastAction(toast: Toast) {
     toast.action?.run();
     setToasts((ts) => ts.filter((t) => t.id !== toast.id));
+  }
+
+  async function saveNoteAndState(note: Note) {
+    setNotes((ns) => {
+      const exists = ns.some((n) => n.id === note.id);
+      return exists ? ns.map((n) => (n.id === note.id ? note : n)) : [...ns, note];
+    });
+    try {
+      await saveNote(note);
+    } catch (err) {
+      console.error("Falha ao salvar nota:", err);
+      pushToast(<WarnGlyph className="text-overdue" />, "Não foi possível salvar a nota", "Tente de novo");
+    }
+  }
+
+  async function removeNote(id: string) {
+    const note = notes.find((n) => n.id === id);
+    if (!note) return;
+    setNoteContextMenu(null);
+    setRenamingNoteId(null);
+    setNotes((ns) => ns.filter((n) => n.id !== id));
+    if (view.kind === "note" && view.id === id) setView({ kind: "notes" });
+    try {
+      await deleteNote(id);
+      pushToast(<TrashGlyph className="text-danger" />, "Nota excluída", note.title || "Sem título", {
+        label: "Desfazer",
+        run: () => {
+          saveNote(note).catch((err) =>
+            console.error("Falha ao restaurar nota:", err),
+          );
+          setNotes((ns) => [...ns, note]);
+        },
+      });
+    } catch (err) {
+      console.error("Falha ao excluir nota:", err);
+      pushToast(<WarnGlyph className="text-overdue" />, "Não foi possível excluir a nota", "Tente de novo");
+      reloadNotes();
+    }
+  }
+
+  async function renameNote(id: string, newTitle: string) {
+    const note = notes.find((n) => n.id === id);
+    if (!note) return;
+    setRenamingNoteId(null);
+    setNoteContextMenu(null);
+    const updated: Note = { ...note, title: newTitle.trim(), updatedAt: toLocalIsoDateTime(new Date()) };
+    await saveNoteAndState(updated);
   }
 
   // Conquistas: avalia a cada mudança e persiste as novas
@@ -143,6 +217,18 @@ export default function MainApp() {
       console.error("Falha ao salvar conquistas:", err),
     );
   }, [tasks, loaded, ach, pushToast]);
+
+  // Escuta evento da barra rápida para abrir uma nota
+  useEffect(() => {
+    const mainWin = getCurrentWebviewWindow();
+    const unlisten = mainWin.listen<{ id: string }>("open-note", async (event) => {
+      await reloadNotes();
+      setView({ kind: "note", id: event.payload.id });
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [reloadNotes]);
 
   async function persist(updated: Task) {
     setTasks((ts) => ts.map((t) => (t.id === updated.id ? updated : t)));
@@ -400,9 +486,12 @@ export default function MainApp() {
         view={view}
         setView={setView}
         groups={groups}
+        notes={notes}
         todayCount={todayCount}
         streakDays={streak(tasks)}
         onEditGroup={(name, x, y) => setGroupEditor({ name, x, y })}
+        onOpenNote={(id) => setView({ kind: "note", id })}
+        onNoteContextMenu={(id, x, y) => setNoteContextMenu({ id, x, y })}
       />
 
       <main className="flex min-w-0 flex-1 flex-col">
@@ -435,6 +524,21 @@ export default function MainApp() {
               selectedId={selectedId}
               editingId={editingId}
             />
+          ) : view.kind === "notes" ? (
+            <div className="flex h-full items-center justify-center">
+              <p className="text-center text-[14px] text-faint">
+                Nenhuma nota aberta. Digite <span className="font-mono text-dim">//</span> na barra rápida para criar uma ✦
+              </p>
+            </div>
+          ) : view.kind === "note" ? (
+            (() => {
+              const note = notes.find((n) => n.id === view.id);
+              if (!note) {
+                setView({ kind: "notes" });
+                return null;
+              }
+              return <NotesView key={note.id} note={note} onSave={saveNoteAndState} />;
+            })()
           ) : (
             <>
               {view.kind === "all" && (
@@ -548,6 +652,21 @@ export default function MainApp() {
         />
       )}
 
+      {/* Menu de contexto de notas */}
+      {noteContextMenu && (
+        <NoteContextMenu
+          id={noteContextMenu.id}
+          x={noteContextMenu.x}
+          y={noteContextMenu.y}
+          renamingId={renamingNoteId}
+          currentTitle={notes.find((n) => n.id === noteContextMenu.id)?.title ?? ""}
+          onRename={(id) => setRenamingNoteId(id)}
+          onRenameCommit={renameNote}
+          onDelete={removeNote}
+          onClose={() => { setNoteContextMenu(null); setRenamingNoteId(null); }}
+        />
+      )}
+
       <Toasts toasts={toasts} onAction={runToastAction} />
     </div>
     </GroupColorProvider>
@@ -597,5 +716,83 @@ function headerFor(
         subtitle: `${n} ${n === 1 ? "pendente" : "pendentes"}`,
       };
     }
+    case "notes":
+      return { title: "Notas", subtitle: null };
+    case "note":
+      return { title: "Nota", subtitle: null };
   }
+}
+
+function NoteContextMenu({
+  id,
+  x,
+  y,
+  renamingId,
+  currentTitle,
+  onRename,
+  onRenameCommit,
+  onDelete,
+  onClose,
+}: {
+  id: string;
+  x: number;
+  y: number;
+  renamingId: string | null;
+  currentTitle: string;
+  onRename: (id: string) => void;
+  onRenameCommit: (id: string, title: string) => void;
+  onDelete: (id: string) => void;
+  onClose: () => void;
+}) {
+  const [renameValue, setRenameValue] = useState(currentTitle);
+  const isRenaming = renamingId === id;
+
+  return (
+    <>
+      <div
+        className="fixed inset-0 z-40"
+        onMouseDown={onClose}
+        onContextMenu={(e) => { e.preventDefault(); onClose(); }}
+      />
+      <div
+        className="animate-fade-in fixed z-50 w-[220px] rounded-xl border border-white/10 bg-raised p-2 shadow-[0_12px_32px_rgba(0,0,0,0.45)]"
+        style={{
+          left: Math.min(x, window.innerWidth - 232),
+          top: Math.min(y, window.innerHeight - 120),
+        }}
+      >
+        {isRenaming ? (
+          <input
+            autoFocus
+            value={renameValue}
+            spellCheck={false}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { onRenameCommit(id, renameValue); }
+              if (e.key === "Escape") { onClose(); }
+            }}
+            onBlur={() => onRenameCommit(id, renameValue)}
+            className="w-full rounded-lg border border-line bg-black/20 px-2.5 py-1.5 text-[13px] text-ink outline-none focus:border-accent/60"
+          />
+        ) : (
+          <>
+            <button
+              onClick={() => onRename(id)}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-ink transition-colors duration-150 hover:bg-hover"
+            >
+              <PencilIcon size={15} className="text-dim" />
+              Renomear nota
+            </button>
+            <button
+              onClick={() => onDelete(id)}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-danger transition-colors duration-150 hover:bg-danger-dim"
+            >
+              <TrashGlyph size={15} />
+              Excluir nota
+            </button>
+          </>
+        )}
+      </div>
+    </>
+  );
 }

@@ -121,6 +121,15 @@ export function TrashIcon(p: IconProps) {
   );
 }
 
+export function NoteIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M6 3h8l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" />
+      <path d="M14 3v4h4M8 12h8M8 16h6" />
+    </svg>
+  );
+}
+
 export function ChevronIcon(p: IconProps & { open?: boolean }) {
   return (
     <svg
