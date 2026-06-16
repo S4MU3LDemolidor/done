@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { getCurrentWebviewWindow, WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { emitTo } from "@tauri-apps/api/event";
 import { LogicalSize } from "@tauri-apps/api/dpi";
 import { parseTask, formatDue, isDateText, toLocalIsoDateTime } from "../lib/parser";
 import { loadGroups, saveTask, type GroupInfo } from "../lib/store";
+import { loadNotes, saveNote } from "../lib/notesStore";
+import { parseNoteInput, findNoteByTitle } from "../lib/notes";
 import { SparkleIcon } from "../components/Icons";
-import { DateGlyph, SparkGlyph, TagGlyph, TaskGlyph } from "../components/glyphs";
+import { DateGlyph, NoteGlyph, SparkGlyph, TagGlyph, TaskGlyph } from "../components/glyphs";
 import { Kbd } from "../components/Kbd";
-import type { Task } from "../lib/types";
+import type { Note, Task } from "../lib/types";
 
 const win = getCurrentWebviewWindow();
 const BASE_HEIGHT = 146;
@@ -23,6 +26,8 @@ export default function QuickAdd() {
   const [highlight, setHighlight] = useState(-1);
   const [dismissed, setDismissed] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const noteInput = parseNoteInput(text);
+  const isNoteMode = noteInput.isNote;
   const parsed = parseTask(text);
 
   const loadGroupList = useCallback(() => {
@@ -60,10 +65,10 @@ export default function QuickAdd() {
     };
   }, []);
 
-  // Sugestão de grupo: último segmento, se já houver vírgula e não for data
+  // Sugestão de grupo: último segmento, se já houver vírgula e não for data (desabilitado no modo nota)
   const segments = text.split(",");
   const fragment = segments.length >= 2 ? segments[segments.length - 1].trim() : "";
-  const inGroupSegment = segments.length >= 2 && !isDateText(fragment);
+  const inGroupSegment = !isNoteMode && segments.length >= 2 && !isDateText(fragment);
   const matches = inGroupSegment
     ? groups.filter((g) => norm(g.name).includes(norm(fragment)))
     : [];
@@ -85,8 +90,49 @@ export default function QuickAdd() {
     inputRef.current?.focus();
   }
 
+  async function submitNote(title: string) {
+    if (saved) return;
+    const now = new Date();
+    try {
+      const notes = await loadNotes();
+      const existing = findNoteByTitle(notes, title);
+      let id: string;
+      if (existing) {
+        id = existing.id;
+      } else {
+        const newNote: Note = {
+          id: crypto.randomUUID(),
+          title: title.trim(),
+          body: "",
+          linkedTasks: [],
+          linkedGroups: [],
+          created: toLocalIsoDateTime(now),
+          updatedAt: toLocalIsoDateTime(now),
+        };
+        await saveNote(newNote);
+        id = newNote.id;
+      }
+      await emitTo("main", "open-note", { id });
+      const main = await WebviewWindow.getByLabel("main");
+      await main?.show();
+      await main?.setFocus();
+      win.hide();
+      reset();
+    } catch (err) {
+      console.error("Falha ao criar/abrir nota:", err);
+    }
+  }
+
   async function submit() {
-    if (!parsed.title.trim() || saved) return;
+    if (saved) return;
+    // Modo nota: //título
+    if (isNoteMode) {
+      const noteTitle = noteInput.isNote ? noteInput.title : "";
+      if (!noteTitle) return; // título vazio → não faz nada
+      await submitNote(noteTitle);
+      return;
+    }
+    if (!parsed.title.trim()) return;
     const now = new Date();
     const task: Task = {
       id: crypto.randomUUID(),
@@ -201,26 +247,37 @@ export default function QuickAdd() {
       ) : (
         <div className="flex flex-1 items-center gap-2 px-4 text-[12px]">
           {text.trim() ? (
-            <>
-              {parsed.title.trim() && (
-                <Chip key={`t-${parsed.title}`}>
-                  <TaskGlyph size={14} className="text-accent" />
-                  {truncate(parsed.title.trim(), 32)}
+            isNoteMode ? (
+              <>
+                <Chip key="note">
+                  <NoteGlyph size={14} className="text-accent" />
+                  {noteInput.isNote && noteInput.title
+                    ? truncate(noteInput.title, 32)
+                    : "nova nota"}
                 </Chip>
-              )}
-              {parsed.due && (
-                <Chip key={`d-${parsed.due}`}>
-                  <DateGlyph size={14} className="text-accent" />
-                  {formatDue(parsed.due)}
-                </Chip>
-              )}
-              {parsed.group && (
-                <Chip key={`g-${parsed.group}`}>
-                  <TagGlyph size={14} className="text-accent" />
-                  {parsed.group}
-                </Chip>
-              )}
-            </>
+              </>
+            ) : (
+              <>
+                {parsed.title.trim() && (
+                  <Chip key={`t-${parsed.title}`}>
+                    <TaskGlyph size={14} className="text-accent" />
+                    {truncate(parsed.title.trim(), 32)}
+                  </Chip>
+                )}
+                {parsed.due && (
+                  <Chip key={`d-${parsed.due}`}>
+                    <DateGlyph size={14} className="text-accent" />
+                    {formatDue(parsed.due)}
+                  </Chip>
+                )}
+                {parsed.group && (
+                  <Chip key={`g-${parsed.group}`}>
+                    <TagGlyph size={14} className="text-accent" />
+                    {parsed.group}
+                  </Chip>
+                )}
+              </>
+            )
           ) : (
             <span className="text-faint">
               título, data e grupo separados por vírgula — só o título é
@@ -244,6 +301,22 @@ export default function QuickAdd() {
                 <Kbd>↑</Kbd>
                 <Kbd>↓</Kbd>
                 <Kbd>↹</Kbd>
+              </span>
+            </>
+          ) : isNoteMode ? (
+            <>
+              <button
+                onClick={submit}
+                disabled={!(noteInput.isNote && noteInput.title)}
+                className="flex items-center gap-1.5 rounded-md px-2 py-1 text-dim transition-colors duration-150 enabled:hover:bg-hover enabled:hover:text-ink disabled:opacity-40"
+              >
+                Abrir nota
+                <Kbd>↵</Kbd>
+              </button>
+              <span className="text-white/10">|</span>
+              <span className="flex items-center gap-1.5 text-faint">
+                Fechar
+                <Kbd>esc</Kbd>
               </span>
             </>
           ) : (

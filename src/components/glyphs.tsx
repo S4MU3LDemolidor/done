@@ -104,6 +104,23 @@ export function TrashGlyph(p: GlyphProps) {
   );
 }
 
+export function NoteGlyph(p: GlyphProps) {
+  return (
+    <svg {...svgProps(p)}>
+      {/* Corpo do documento */}
+      <path
+        d="M7 4h7l4 4v12a1.4 1.4 0 0 1-1.4 1.4H7A1.4 1.4 0 0 1 5.6 20V5.4A1.4 1.4 0 0 1 7 4Z"
+        fill="currentColor"
+        opacity="0.22"
+      />
+      {/* Dobra superior-direita */}
+      <path d="M14 4v4h4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      {/* Linhas de texto */}
+      <path d="M8.5 12.5h7M8.5 15.5h5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function WarnGlyph(p: GlyphProps) {
   return (
     <svg {...svgProps(p)}>
