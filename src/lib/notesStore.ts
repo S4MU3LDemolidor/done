@@ -35,7 +35,11 @@ export async function loadNotes(): Promise<Note[]> {
     try {
       const raw = await readTextFile(await join(dir, entry.name));
       const note = JSON.parse(raw) as Note;
-      if (note.id && typeof note.title === "string") notes.push(note);
+      if (note.id && typeof note.title === "string") {
+        note.linkedTasks = Array.isArray(note.linkedTasks) ? note.linkedTasks : [];
+        note.linkedGroups = Array.isArray(note.linkedGroups) ? note.linkedGroups : [];
+        notes.push(note);
+      }
     } catch (err) {
       console.warn(`Arquivo de nota ilegível, ignorado: ${entry.name}`, err);
     }

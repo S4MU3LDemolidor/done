@@ -12,13 +12,11 @@ export function debounce<T extends AnyFn>(fn: T, ms: number): Debounced<T> {
   let pendingArgs: Parameters<T> | null = null;
 
   function invoke() {
-    if (pendingArgs !== null) {
-      fn(...pendingArgs);
-      pendingArgs = null;
-    }
-    if (timer !== null) {
-      clearTimeout(timer);
-      timer = null;
+    const args = pendingArgs;
+    pendingArgs = null;
+    timer = null;
+    if (args !== null) {
+      fn(...args);
     }
   }
 

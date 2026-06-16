@@ -37,6 +37,25 @@ describe("parseMentions", () => {
     expect(parseMentions(doc)).toEqual({ taskIds: [], groupNames: [] });
   });
 
+  it("ignores mention nodes with an unknown kind", () => {
+    const doc = {
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          content: [
+            {
+              type: "mention",
+              attrs: { kind: "foo", ref: "x" },
+            },
+          ],
+        },
+      ],
+    };
+
+    expect(parseMentions(doc)).toEqual({ taskIds: [], groupNames: [] });
+  });
+
   it("handles nested content recursively", () => {
     const doc = {
       type: "doc",

@@ -56,4 +56,19 @@ describe("debounce", () => {
     deb.flush();
     expect(fn).not.toHaveBeenCalled();
   });
+
+  it("is reusable after the timer fires", () => {
+    const fn = vi.fn();
+    const deb = debounce(fn, 100);
+
+    deb("a");
+    vi.advanceTimersByTime(100);
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(fn).toHaveBeenCalledWith("a");
+
+    deb("b");
+    vi.advanceTimersByTime(100);
+    expect(fn).toHaveBeenCalledTimes(2);
+    expect(fn).toHaveBeenCalledWith("b");
+  });
 });
