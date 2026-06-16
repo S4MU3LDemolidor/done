@@ -243,6 +243,43 @@ textarea {
   margin: 0.5em 0;
 }
 
+/* Lista de tarefas (TaskList/TaskItem) — caixas de seleção, sem marcadores */
+.notes-prose ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.1rem;
+  margin-bottom: 0.6em;
+}
+.notes-prose ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55em;
+  margin-bottom: 0.2em;
+}
+.notes-prose ul[data-type="taskList"] li > label {
+  flex-shrink: 0;
+  margin-top: 0.28em;
+  user-select: none;
+}
+.notes-prose ul[data-type="taskList"] li > div {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.notes-prose ul[data-type="taskList"] input[type="checkbox"] {
+  accent-color: var(--color-accent);
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+.notes-prose ul[data-type="taskList"] li[data-checked="true"] > div {
+  color: var(--color-dim);
+  text-decoration: line-through;
+}
+/* Sublistas aninhadas voltam a ter recuo */
+.notes-prose ul[data-type="taskList"] ul[data-type="taskList"] {
+  padding-left: 1.4rem;
+  margin-top: 0.2em;
+}
+
 /* ── End note editor ──────────────────────────────────────────────── */
 
 .animate-chip-in {

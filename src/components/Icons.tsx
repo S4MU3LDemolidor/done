@@ -130,6 +130,95 @@ export function NoteIcon(p: IconProps) {
   );
 }
 
+/* ----------------------------------------------------------------------------
+ * Glifos de blocos — usados na paleta de comandos "/" do editor de notas.
+ * Estilo de contorno, herdam a cor via currentColor.
+ * -------------------------------------------------------------------------- */
+
+export function TextIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M5 6h14M5 6v1m14-1v1M12 6v13m0 0h-2m2 0h2" />
+    </svg>
+  );
+}
+
+export function Heading1Icon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M4 6v12M11 6v12M4 12h7" />
+      <path d="M15.5 10.5 18 9v9" />
+    </svg>
+  );
+}
+
+export function Heading2Icon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M4 6v12M11 6v12M4 12h7" />
+      <path d="M15 10.5a1.9 1.9 0 0 1 3.4 1.1c0 1.6-3.4 2.9-3.4 4.9h3.6" />
+    </svg>
+  );
+}
+
+export function Heading3Icon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M4 6v12M11 6v12M4 12h7" />
+      <path d="M15 10.2a1.8 1.8 0 1 1 1.6 2.7 1.8 1.8 0 1 1-1.6 2.7" />
+    </svg>
+  );
+}
+
+export function BulletListIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M9 6h11M9 12h11M9 18h11" />
+      <circle cx="4.5" cy="6" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="4.5" cy="12" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="4.5" cy="18" r="1.1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+export function OrderedListIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M10 6h10M10 12h10M10 18h10" />
+      <path d="M4 5.5 5 5v3M3.5 18h2l-2-2.4a1 1 0 0 1 2-.6" strokeWidth="1.4" />
+    </svg>
+  );
+}
+
+export function TaskListIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M11 7h9M11 17h9" />
+      <rect x="3" y="4" width="6" height="6" rx="1.5" />
+      <path d="m4.5 7 1.3 1.3L8 6" strokeWidth="1.4" />
+      <rect x="3" y="14" width="6" height="6" rx="1.5" />
+    </svg>
+  );
+}
+
+export function CodeBlockIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <rect x="3" y="5" width="18" height="14" rx="2.5" />
+      <path d="m9 10-2 2 2 2M15 10l2 2-2 2" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+export function DividerIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M4 12h16" />
+      <path d="M6 8h12M6 16h12" opacity="0.4" />
+    </svg>
+  );
+}
+
 export function ChevronIcon(p: IconProps & { open?: boolean }) {
   return (
     <svg

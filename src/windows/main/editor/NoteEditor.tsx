@@ -1,7 +1,10 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
+import TaskList from "@tiptap/extension-task-list";
+import TaskItem from "@tiptap/extension-task-item";
 import { Markdown } from "tiptap-markdown";
+import { SlashCommands } from "./SlashCommands";
 
 interface NoteEditorProps {
   markdown: string;
@@ -13,6 +16,8 @@ export function NoteEditor({ markdown, onChange }: NoteEditorProps) {
     immediatelyRender: false,
     extensions: [
       StarterKit,
+      TaskList,
+      TaskItem.configure({ nested: true }),
       Placeholder.configure({
         placeholder: "Escreva algo, ou digite / para comandos…",
       }),
@@ -20,6 +25,7 @@ export function NoteEditor({ markdown, onChange }: NoteEditorProps) {
         html: false,
         transformPastedText: true,
       }),
+      SlashCommands,
     ],
     content: markdown,
     editorProps: {
