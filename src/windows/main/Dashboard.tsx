@@ -1,45 +1,69 @@
+import { FolderIcon } from "../../components/Icons";
+import { useGroupColor } from "./GroupColorContext";
 import type { Task } from "../../lib/types";
 
 export function Dashboard({
   tasks,
-  groupCount,
+  groups,
+  onOpenGroup,
 }: {
   tasks: Task[];
-  groupCount: number;
+  groups: string[];
+  onOpenGroup: (name: string) => void;
 }) {
-  const total = tasks.length;
-  const pending = tasks.filter((t) => !t.done).length;
-  const done = tasks.filter((t) => t.done).length;
-
+  if (groups.length === 0) return null;
   return (
-    <div className="grid grid-cols-4 gap-3 px-1 pt-3 pb-2">
-      <Stat value={total} label={total === 1 ? "tarefa" : "tarefas"} />
-      <Stat value={pending} label="pendentes" accent />
-      <Stat value={done} label={done === 1 ? "concluída" : "concluídas"} />
-      <Stat value={groupCount} label={groupCount === 1 ? "grupo" : "grupos"} />
+    <div className="px-1 pt-2 pb-1">
+      <h2 className="px-1 pb-2 text-[11px] font-semibold tracking-wide text-faint uppercase">
+        Acesso rápido
+      </h2>
+      <div className="grid grid-cols-4 gap-3">
+        {groups.map((g) => (
+          <GroupCard
+            key={g}
+            name={g}
+            tasks={tasks}
+            onOpen={() => onOpenGroup(g)}
+          />
+        ))}
+      </div>
     </div>
   );
 }
 
-function Stat({
-  value,
-  label,
-  accent,
+function GroupCard({
+  name,
+  tasks,
+  onOpen,
 }: {
-  value: number;
-  label: string;
-  accent?: boolean;
+  name: string;
+  tasks: Task[];
+  onOpen: () => void;
 }) {
+  const color = useGroupColor(name);
+  const inGroup = tasks.filter((t) => t.group === name);
+  const total = inGroup.length;
+  const pending = inGroup.filter((t) => !t.done).length;
+
   return (
-    <div className="rounded-xl border border-accent/20 bg-accent-dim px-4 py-3.5">
-      <div
-        className={`text-[24px] leading-none font-semibold ${
-          accent ? "text-accent" : "text-ink"
-        }`}
+    <button
+      onClick={onOpen}
+      className="flex flex-col items-start gap-2.5 rounded-xl border p-3.5 text-left transition-transform duration-150 hover:-translate-y-0.5"
+      style={{ background: `${color}12`, borderColor: `${color}33` }}
+    >
+      <span
+        className="flex h-9 w-9 items-center justify-center rounded-lg"
+        style={{ background: `${color}26`, color }}
       >
-        {value}
-      </div>
-      <div className="mt-1.5 text-[12px] text-dim">{label}</div>
-    </div>
+        <FolderIcon size={18} />
+      </span>
+      <span className="w-full truncate text-[14px] font-medium text-ink">
+        {name}
+      </span>
+      <span className="text-[12px] text-dim">
+        {total} {total === 1 ? "tarefa" : "tarefas"} · {pending}{" "}
+        {pending === 1 ? "pendente" : "pendentes"}
+      </span>
+    </button>
   );
 }

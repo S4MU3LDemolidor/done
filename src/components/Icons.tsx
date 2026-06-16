@@ -70,6 +70,14 @@ export function FlameIcon(p: IconProps) {
   );
 }
 
+export function FolderIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M4 7.5A1.5 1.5 0 0 1 5.5 6h3.2a1.5 1.5 0 0 1 1.06.44L11 7.5h7.5A1.5 1.5 0 0 1 20 9v8a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17V7.5Z" />
+    </svg>
+  );
+}
+
 export function GridIcon(p: IconProps) {
   return (
     <svg {...base(p)}>

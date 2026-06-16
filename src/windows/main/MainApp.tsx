@@ -438,7 +438,11 @@ export default function MainApp() {
           ) : (
             <>
               {view.kind === "all" && (
-                <Dashboard tasks={tasks} groupCount={groups.length} />
+                <Dashboard
+                  tasks={tasks}
+                  groups={groups}
+                  onOpenGroup={(name) => setView({ kind: "group", name })}
+                />
               )}
               <TaskList
                 sections={sections}
