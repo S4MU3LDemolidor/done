@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
 import { toLocalIsoDateTime } from "../../lib/parser";
 import { debounce } from "../../lib/debounce";
+import { parseMentions, type TiptapNode } from "../../lib/mentions";
 import type { Note } from "../../lib/types";
+import { NoteEditor } from "./editor/NoteEditor";
 
 interface NotesViewProps {
   note: Note;
@@ -10,16 +12,29 @@ interface NotesViewProps {
 
 export function NotesView({ note, onSave }: NotesViewProps) {
   const titleRef = useRef<HTMLInputElement>(null);
-  const bodyRef = useRef<HTMLTextAreaElement>(null);
 
-  // Debounced save — flushed on unmount and when the note id changes (keyed externally)
+  // Refs that always hold the latest values so the debounced saver reads them
+  // without stale closures — avoids a title edit clobbering a pending body edit
+  const latestTitleRef = useRef(note.title);
+  const latestBodyRef = useRef(note.body);
+  const latestDocRef = useRef<object>({}); // Tiptap JSON doc
+
+  // Single debounced saver — reads from refs, not from captured values
   const debouncedSave = useRef(
-    debounce((updated: Note) => {
+    debounce(() => {
+      const updated: Note = {
+        ...note,
+        title: latestTitleRef.current,
+        body: latestBodyRef.current,
+        linkedTasks: parseMentions(latestDocRef.current as TiptapNode).taskIds,
+        linkedGroups: parseMentions(latestDocRef.current as TiptapNode).groupNames,
+        updatedAt: toLocalIsoDateTime(new Date()),
+      };
       onSave(updated);
     }, 500),
   );
 
-  // Flush pending save on unmount
+  // Flush any pending save when this note component unmounts (note switched / closed)
   useEffect(() => {
     const d = debouncedSave.current;
     return () => {
@@ -27,36 +42,25 @@ export function NotesView({ note, onSave }: NotesViewProps) {
     };
   }, []);
 
-  // When the note prop changes externally (e.g. title renamed), sync inputs
+  // When the note prop changes externally (e.g. renamed from sidebar), sync the
+  // title input and latest refs — but only when not currently focused
   useEffect(() => {
+    latestTitleRef.current = note.title;
+    latestBodyRef.current = note.body;
     if (titleRef.current && document.activeElement !== titleRef.current) {
       titleRef.current.value = note.title;
-    }
-    if (bodyRef.current && document.activeElement !== bodyRef.current) {
-      bodyRef.current.value = note.body;
     }
   }, [note]);
 
   function handleTitleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const title = e.target.value;
-    const body = bodyRef.current?.value ?? note.body;
-    debouncedSave.current({
-      ...note,
-      title,
-      body,
-      updatedAt: toLocalIsoDateTime(new Date()),
-    });
+    latestTitleRef.current = e.target.value;
+    debouncedSave.current();
   }
 
-  function handleBodyChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
-    const body = e.target.value;
-    const title = titleRef.current?.value ?? note.title;
-    debouncedSave.current({
-      ...note,
-      title,
-      body,
-      updatedAt: toLocalIsoDateTime(new Date()),
-    });
+  function handleBodyChange(md: string, doc: object) {
+    latestBodyRef.current = md;
+    latestDocRef.current = doc;
+    debouncedSave.current();
   }
 
   return (
@@ -69,13 +73,10 @@ export function NotesView({ note, onSave }: NotesViewProps) {
         onChange={handleTitleChange}
         className="w-full bg-transparent text-[22px] font-semibold tracking-tight text-ink outline-none placeholder:text-faint"
       />
-      <textarea
-        ref={bodyRef}
-        defaultValue={note.body}
-        placeholder="Escreva algo…"
-        spellCheck={false}
+      <NoteEditor
+        key={note.id}
+        markdown={note.body}
         onChange={handleBodyChange}
-        className="min-h-[300px] flex-1 resize-none bg-transparent text-[14px] leading-relaxed text-ink outline-none placeholder:text-faint"
       />
     </div>
   );
