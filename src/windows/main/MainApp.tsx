@@ -149,7 +149,7 @@ export default function MainApp() {
     setToasts((ts) => ts.filter((t) => t.id !== toast.id));
   }
 
-  async function saveNoteAndState(note: Note) {
+  const saveNoteAndState = useCallback(async (note: Note) => {
     setNotes((ns) => {
       const exists = ns.some((n) => n.id === note.id);
       return exists ? ns.map((n) => (n.id === note.id ? note : n)) : [...ns, note];
@@ -159,8 +159,9 @@ export default function MainApp() {
     } catch (err) {
       console.error("Falha ao salvar nota:", err);
       pushToast(<WarnGlyph className="text-overdue" />, "Não foi possível salvar a nota", "Tente de novo");
+      reloadNotes();
     }
-  }
+  }, [pushToast, reloadNotes]);
 
   async function removeNote(id: string) {
     const note = notes.find((n) => n.id === id);
@@ -524,7 +525,7 @@ export default function MainApp() {
               selectedId={selectedId}
               editingId={editingId}
             />
-          ) : view.kind === "notes" ? (
+          ) : view.kind === "notes" || (view.kind === "note" && !notes.find((n) => n.id === view.id)) ? (
             <div className="flex h-full items-center justify-center">
               <p className="text-center text-[14px] text-faint">
                 Nenhuma nota aberta. Digite <span className="font-mono text-dim">//</span> na barra rápida para criar uma ✦
@@ -532,11 +533,7 @@ export default function MainApp() {
             </div>
           ) : view.kind === "note" ? (
             (() => {
-              const note = notes.find((n) => n.id === view.id);
-              if (!note) {
-                setView({ kind: "notes" });
-                return null;
-              }
+              const note = notes.find((n) => n.id === view.id)!;
               return <NotesView key={note.id} note={note} onSave={saveNoteAndState} />;
             })()
           ) : (
@@ -655,6 +652,7 @@ export default function MainApp() {
       {/* Menu de contexto de notas */}
       {noteContextMenu && (
         <NoteContextMenu
+          key={noteContextMenu.id}
           id={noteContextMenu.id}
           x={noteContextMenu.x}
           y={noteContextMenu.y}
