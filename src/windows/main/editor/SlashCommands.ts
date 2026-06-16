@@ -49,21 +49,21 @@ const ITEMS: SlashItem[] = [
     title: "Título 1",
     glyph: Heading1Icon,
     command: (editor, range) =>
-      editor.chain().focus().deleteRange(range).toggleHeading({ level: 1 }).run(),
+      editor.chain().focus().deleteRange(range).setHeading({ level: 1 }).run(),
   },
   {
     key: "heading-2",
     title: "Título 2",
     glyph: Heading2Icon,
     command: (editor, range) =>
-      editor.chain().focus().deleteRange(range).toggleHeading({ level: 2 }).run(),
+      editor.chain().focus().deleteRange(range).setHeading({ level: 2 }).run(),
   },
   {
     key: "heading-3",
     title: "Título 3",
     glyph: Heading3Icon,
     command: (editor, range) =>
-      editor.chain().focus().deleteRange(range).toggleHeading({ level: 3 }).run(),
+      editor.chain().focus().deleteRange(range).setHeading({ level: 3 }).run(),
   },
   {
     key: "bullet-list",
@@ -91,7 +91,7 @@ const ITEMS: SlashItem[] = [
     title: "Bloco de código",
     glyph: CodeBlockIcon,
     command: (editor, range) =>
-      editor.chain().focus().deleteRange(range).toggleCodeBlock().run(),
+      editor.chain().focus().deleteRange(range).setCodeBlock().run(),
   },
   {
     key: "divider",

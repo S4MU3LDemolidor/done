@@ -26,8 +26,14 @@ interface SlashMenuProps {
 export const SlashMenu = forwardRef<SlashMenuRef, SlashMenuProps>(
   ({ items, command }, ref) => {
     const [selected, setSelected] = useState(0);
+    const selectedRef = useRef(selected);
     const listRef = useRef<HTMLDivElement>(null);
     const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+    // Keep the ref in sync with the state on every render.
+    useEffect(() => {
+      selectedRef.current = selected;
+    });
 
     // Reset the selection whenever the filtered list changes.
     useEffect(() => {
@@ -47,17 +53,23 @@ export const SlashMenu = forwardRef<SlashMenuRef, SlashMenuProps>(
     useImperativeHandle(ref, () => ({
       onKeyDown: (event) => {
         if (event.key === "ArrowDown") {
-          setSelected((i) => (items.length ? (i + 1) % items.length : 0));
+          setSelected((i) => {
+            const next = items.length ? (i + 1) % items.length : 0;
+            selectedRef.current = next;
+            return next;
+          });
           return true;
         }
         if (event.key === "ArrowUp") {
-          setSelected((i) =>
-            items.length ? (i - 1 + items.length) % items.length : 0,
-          );
+          setSelected((i) => {
+            const next = items.length ? (i - 1 + items.length) % items.length : 0;
+            selectedRef.current = next;
+            return next;
+          });
           return true;
         }
         if (event.key === "Enter") {
-          select(selected);
+          select(selectedRef.current);
           return true;
         }
         return false;
