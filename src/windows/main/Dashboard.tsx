@@ -31,7 +31,7 @@ function Stat({
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-line bg-raised px-4 py-3.5">
+    <div className="rounded-xl border border-accent/20 bg-accent-dim px-4 py-3.5">
       <div
         className={`text-[24px] leading-none font-semibold ${
           accent ? "text-accent" : "text-ink"
