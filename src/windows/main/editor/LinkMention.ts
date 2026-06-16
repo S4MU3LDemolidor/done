@@ -76,6 +76,10 @@ export function registerMentionMarkdownRule(
   markdownit: any,
   resolveLabel: (kind: string, ref: string) => string,
 ): void {
+  // Guard: skip registration if a rule with this name already exists to prevent
+  // unbounded accumulation when tiptap-markdown calls setup() on every parse.
+  if (markdownit.inline.ruler.__rules__?.some((r: { name: string }) => r.name === "link_mention")) return;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rule = (state: any, silent: boolean): boolean => {
     const src: string = state.src;

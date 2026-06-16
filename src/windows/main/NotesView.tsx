@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Editor } from "@tiptap/core";
 import { toLocalIsoDateTime } from "../../lib/parser";
 import { debounce } from "../../lib/debounce";
@@ -180,6 +180,12 @@ export function NotesView({
 
   const hasLinks = linkedTasks.length > 0 || linkedGroups.length > 0;
 
+  // Stable callback so NoteEditor's effect (which lists onEditorReady as a dep)
+  // does not re-run on every NotesView re-render, avoiding a transient null flash.
+  const handleEditorReady = useCallback((e: Editor | null) => {
+    editorRef.current = e;
+  }, []);
+
   return (
     <div className="flex h-full flex-col gap-3 pt-2">
       <input
@@ -245,9 +251,7 @@ export function NotesView({
         tasks={tasks}
         groups={groups}
         groupColors={groupColors}
-        onEditorReady={(e) => {
-          editorRef.current = e;
-        }}
+        onEditorReady={handleEditorReady}
       />
     </div>
   );
