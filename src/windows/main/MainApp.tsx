@@ -534,7 +534,16 @@ export default function MainApp() {
           ) : view.kind === "note" ? (
             (() => {
               const note = notes.find((n) => n.id === view.id)!;
-              return <NotesView key={note.id} note={note} onSave={saveNoteAndState} />;
+              return (
+                <NotesView
+                  key={note.id}
+                  note={note}
+                  onSave={saveNoteAndState}
+                  tasks={tasks}
+                  groups={groups}
+                  groupColors={groupColors}
+                />
+              );
             })()
           ) : (
             <>

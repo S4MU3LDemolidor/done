@@ -280,6 +280,22 @@ textarea {
   margin-top: 0.2em;
 }
 
+/* Chips de menção (@) inline no corpo da nota */
+.notes-prose .mention-chip {
+  display: inline-block;
+  vertical-align: baseline;
+  padding: 0.05em 0.45em;
+  border-radius: 6px;
+  font-size: 0.9em;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: default;
+  /* Tarefas usam o vermelho de destaque; grupos sobrescrevem via --chip-color */
+  color: var(--chip-color, var(--color-accent));
+  background: color-mix(in srgb, var(--chip-color, var(--color-accent)) 16%, transparent);
+}
+
 /* ── End note editor ──────────────────────────────────────────────── */
 
 .animate-chip-in {

@@ -2,15 +2,25 @@ import { useEffect, useRef } from "react";
 import { toLocalIsoDateTime } from "../../lib/parser";
 import { debounce } from "../../lib/debounce";
 import { parseMentions, type TiptapNode } from "../../lib/mentions";
-import type { Note } from "../../lib/types";
+import type { GroupColors } from "../../lib/store";
+import type { Note, Task } from "../../lib/types";
 import { NoteEditor } from "./editor/NoteEditor";
 
 interface NotesViewProps {
   note: Note;
   onSave: (note: Note) => void;
+  tasks: Task[];
+  groups: string[];
+  groupColors: GroupColors;
 }
 
-export function NotesView({ note, onSave }: NotesViewProps) {
+export function NotesView({
+  note,
+  onSave,
+  tasks,
+  groups,
+  groupColors,
+}: NotesViewProps) {
   const titleRef = useRef<HTMLInputElement>(null);
 
   // FIX A: stable refs for onSave and note so the debounced saver never closes
@@ -41,7 +51,10 @@ export function NotesView({ note, onSave }: NotesViewProps) {
       // FIX C: only recompute links when the doc was actually edited this session
       const mentions = docDirtyRef.current
         ? parseMentions(latestDocRef.current as TiptapNode)
-        : { taskIds: latestNoteRef.current.linkedTasks, groupNames: latestNoteRef.current.linkedGroups };
+        : {
+            taskIds: latestNoteRef.current.linkedTasks,
+            groupNames: latestNoteRef.current.linkedGroups,
+          };
 
       // FIX A: spread latestNoteRef so all non-edited fields stay current, and
       // call the latest onSave (not the one captured at mount)
@@ -106,6 +119,9 @@ export function NotesView({ note, onSave }: NotesViewProps) {
         key={note.id}
         markdown={note.body}
         onChange={handleBodyChange}
+        tasks={tasks}
+        groups={groups}
+        groupColors={groupColors}
       />
     </div>
   );
