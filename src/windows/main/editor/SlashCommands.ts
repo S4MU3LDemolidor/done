@@ -1,4 +1,5 @@
 import { Extension } from "@tiptap/core";
+import { normalizeText } from "../../../lib/text";
 import type { Editor, Range } from "@tiptap/core";
 import { ReactRenderer } from "@tiptap/react";
 import Suggestion from "@tiptap/suggestion";
@@ -33,8 +34,6 @@ export interface SlashItem {
   command: (editor: Editor, range: Range) => void;
 }
 
-const norm = (s: string) =>
-  s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 
 const ITEMS: SlashItem[] = [
   {
@@ -117,9 +116,9 @@ export const SlashCommands = Extension.create({
         pluginKey: slashCommandsPluginKey,
 
         items: ({ query }) => {
-          const q = norm(query.trim());
+          const q = normalizeText(query.trim());
           if (!q) return ITEMS;
-          return ITEMS.filter((item) => norm(item.title).includes(q));
+          return ITEMS.filter((item) => normalizeText(item.title).includes(q));
         },
 
         command: ({ editor, range, props }) => {

@@ -1,11 +1,5 @@
 import type { Note } from "./types";
-
-function normalize(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "");
-}
+import { normalizeText } from "./text";
 
 export type NoteInputResult =
   | { isNote: true; title: string }
@@ -22,6 +16,6 @@ export function findNoteByTitle(
   notes: Note[],
   title: string,
 ): Note | undefined {
-  const normalizedTitle = normalize(title.trim());
-  return notes.find((n) => normalize(n.title.trim()) === normalizedTitle);
+  const normalizedTitle = normalizeText(title.trim());
+  return notes.find((n) => normalizeText(n.title.trim()) === normalizedTitle);
 }

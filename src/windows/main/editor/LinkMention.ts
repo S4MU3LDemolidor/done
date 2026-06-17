@@ -1,4 +1,5 @@
 import Mention, { type MentionOptions } from "@tiptap/extension-mention";
+import { normalizeText } from "../../../lib/text";
 import { mergeAttributes } from "@tiptap/core";
 import { ReactRenderer } from "@tiptap/react";
 import type {
@@ -33,12 +34,6 @@ export interface LinkMentionOptions
   getGroupColor: (name: string) => string;
 }
 
-const norm = (s: string) =>
-  s
-    .toLowerCase()
-    .normalize("NFD")
-    // eslint-disable-next-line no-misleading-character-class
-    .replace(/[̀-ͯ]/g, "");
 
 const MAX_RESULTS = 8;
 
@@ -218,16 +213,16 @@ export function buildMentionSuggestion(opts: {
   getGroupColor: (name: string) => string;
 }): Omit<SuggestionOptions<MentionItem, MentionItem>, "editor"> {
   const search = (query: string): MentionItem[] => {
-    const q = norm(query.trim());
+    const q = normalizeText(query.trim());
     const tasks = opts.getTasks();
     const groups = opts.getGroups();
 
     const taskItems: MentionItem[] = tasks
-      .filter((t) => !q || norm(t.title).includes(q))
+      .filter((t) => !q || normalizeText(t.title).includes(q))
       .map((t) => ({ kind: "task" as const, ref: t.id, label: t.title }));
 
     const groupItems: MentionItem[] = groups
-      .filter((g) => !q || norm(g).includes(q))
+      .filter((g) => !q || normalizeText(g).includes(q))
       .map((g) => ({
         kind: "group" as const,
         ref: g,

@@ -1,4 +1,5 @@
 import type { ParsedTask } from "./types";
+import { normalizeText } from "./text";
 
 const WEEKDAYS: Record<string, number> = {
   domingo: 0,
@@ -15,12 +16,6 @@ const MONTHS_SHORT = [
   "jul", "ago", "set", "out", "nov", "dez",
 ];
 
-function normalize(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "");
-}
 
 export function toIsoDate(d: Date): string {
   const y = d.getFullYear();
@@ -51,7 +46,7 @@ function addDays(d: Date, days: number): Date {
 }
 
 function parseDateSegment(segment: string, now: Date): string | null {
-  const norm = normalize(segment);
+  const norm = normalizeText(segment);
   const today = startOfDay(now);
 
   if (norm === "hoje") return toIsoDate(today);

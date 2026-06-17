@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Editor } from "@tiptap/core";
 import { toLocalIsoDateTime } from "../../lib/parser";
 import { debounce } from "../../lib/debounce";
+import { normalizeText } from "../../lib/text";
 import { parseMentions, type TiptapNode } from "../../lib/mentions";
 import { groupColor } from "../../lib/colors";
 import type { GroupColors } from "../../lib/store";
@@ -23,12 +24,6 @@ interface NotesViewProps {
   groupColors: GroupColors;
 }
 
-const norm = (s: string) =>
-  s
-    .toLowerCase()
-    .normalize("NFD")
-    // eslint-disable-next-line no-misleading-character-class
-    .replace(/[̀-ͯ]/g, "");
 
 export function NotesView({
   note,
@@ -97,6 +92,20 @@ export function NotesView({
     const d = debouncedSave.current;
     return () => {
       d.flush();
+    };
+  }, []);
+
+  // Flush any pending save when the webview is hidden/destroyed (window closed
+  // without React unmount). `pagehide` fires on Tauri webview close; `beforeunload`
+  // is a belt-and-suspenders fallback for browser-style navigation.
+  useEffect(() => {
+    const d = debouncedSave.current;
+    const flush = () => d.flush();
+    window.addEventListener("pagehide", flush);
+    window.addEventListener("beforeunload", flush);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      window.removeEventListener("beforeunload", flush);
     };
   }, []);
 
@@ -383,15 +392,15 @@ function AddPicker({
   }, []);
 
   const items = useMemo<MentionItem[]>(() => {
-    const q = norm(query.trim());
+    const q = normalizeText(query.trim());
     if (kind === "task") {
       return tasks
-        .filter((t) => !q || norm(t.title).includes(q))
+        .filter((t) => !q || normalizeText(t.title).includes(q))
         .slice(0, 8)
         .map((t) => ({ kind: "task" as const, ref: t.id, label: t.title }));
     }
     return groups
-      .filter((g) => !q || norm(g).includes(q))
+      .filter((g) => !q || normalizeText(g).includes(q))
       .slice(0, 8)
       .map((g) => ({
         kind: "group" as const,

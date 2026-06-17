@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { normalizeText } from "../lib/text";
 import { getCurrentWebviewWindow, WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { emitTo } from "@tauri-apps/api/event";
 import { LogicalSize } from "@tauri-apps/api/dpi";
@@ -16,8 +17,6 @@ const BASE_HEIGHT = 146;
 const ITEM_HEIGHT = 36;
 const MAX_VISIBLE = 5;
 
-const norm = (s: string) =>
-  s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 
 export default function QuickAdd() {
   const [text, setText] = useState("");
@@ -70,7 +69,7 @@ export default function QuickAdd() {
   const fragment = segments.length >= 2 ? segments[segments.length - 1].trim() : "";
   const inGroupSegment = !isNoteMode && segments.length >= 2 && !isDateText(fragment);
   const matches = inGroupSegment
-    ? groups.filter((g) => norm(g.name).includes(norm(fragment)))
+    ? groups.filter((g) => normalizeText(g.name).includes(normalizeText(fragment)))
     : [];
   const dropdownOpen = matches.length > 0 && !dismissed && !saved;
 
@@ -237,7 +236,7 @@ export default function QuickAdd() {
                   style={{ background: g.color }}
                 />
                 <span className="text-ink">{g.name}</span>
-                {norm(g.name) === norm(fragment) && (
+                {normalizeText(g.name) === normalizeText(fragment) && (
                   <span className="ml-auto text-[11px] text-faint">atual</span>
                 )}
               </button>
