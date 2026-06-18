@@ -340,35 +340,57 @@ export default function MainApp() {
   async function deleteGroup(name: string) {
     setGroupEditor(null);
     const affected = tasks.filter((t) => t.group === name);
-    if (affected.length === 0) return;
-    setTasks((ts) =>
-      ts.map((t) => (t.group === name ? { ...t, group: null } : t)),
-    );
+    const removedColor = groupColors[name];
+
+    // Exclui as tarefas do grupo e remove a cor salva (some do Option+Space também)
+    setTasks((ts) => ts.filter((t) => t.group !== name));
+    if (selectedId && affected.some((a) => a.id === selectedId)) {
+      setSelectedId(null);
+    }
+    if (removedColor !== undefined) {
+      setGroupColors((prev) => {
+        const next = { ...prev };
+        delete next[name];
+        saveGroupColors(next).catch((err) =>
+          console.error("Falha ao salvar cores de grupo:", err),
+        );
+        return next;
+      });
+    }
     if (view.kind === "group" && view.name === name) setView({ kind: "today" });
     for (const t of affected) {
       try {
-        await saveTask({ ...t, group: null });
+        await deleteTask(t.id);
       } catch (err) {
-        console.error("Falha ao remover grupo da tarefa:", err);
+        console.error("Falha ao excluir tarefa do grupo:", err);
       }
     }
+
     pushToast(
       <TrashGlyph className="text-danger" />,
       "Grupo excluído",
-      `${affected.length} ${affected.length === 1 ? "tarefa" : "tarefas"} sem grupo`,
+      `${affected.length} ${affected.length === 1 ? "tarefa excluída" : "tarefas excluídas"}`,
       {
         label: "Desfazer",
         run: () => {
-          setTasks((ts) =>
-            ts.map((t) =>
-              affected.some((a) => a.id === t.id) ? { ...t, group: name } : t,
-            ),
-          );
+          setTasks((ts) => [
+            ...ts,
+            ...affected.filter((a) => !ts.some((t) => t.id === a.id)),
+          ]);
           affected.forEach((t) =>
             saveTask(t).catch((err) =>
-              console.error("Falha ao restaurar grupo:", err),
+              console.error("Falha ao restaurar tarefa:", err),
             ),
           );
+          if (removedColor !== undefined) {
+            setGroupColors((prev) => {
+              const next = { ...prev, [name]: removedColor };
+              saveGroupColors(next).catch((err) =>
+                console.error("Falha ao restaurar cor do grupo:", err),
+              );
+              return next;
+            });
+          }
         },
       },
     );

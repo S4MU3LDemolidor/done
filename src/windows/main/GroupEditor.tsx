@@ -25,6 +25,7 @@ export function GroupEditor({
   onClose: () => void;
 }) {
   const [name, setName] = useState(target.name);
+  const [confirming, setConfirming] = useState(false);
   const current = groupColor(target.name, colors);
 
   function commitRename() {
@@ -89,11 +90,15 @@ export function GroupEditor({
         </div>
 
         <button
-          onClick={() => onDelete(target.name)}
-          className="mt-3 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[13px] text-danger transition-colors duration-150 hover:bg-danger-dim"
+          onClick={() =>
+            confirming ? onDelete(target.name) : setConfirming(true)
+          }
+          className={`mt-3 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[13px] text-danger transition-colors duration-150 ${
+            confirming ? "bg-danger-dim font-medium" : "hover:bg-danger-dim"
+          }`}
         >
           <TrashGlyph size={15} />
-          Excluir grupo
+          {confirming ? "Excluir grupo e tarefas?" : "Excluir grupo"}
         </button>
       </div>
     </>

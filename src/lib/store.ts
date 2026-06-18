@@ -8,8 +8,10 @@ import {
   watch,
   writeTextFile,
 } from "@tauri-apps/plugin-fs";
-import { groupColor } from "./colors";
+import { deriveGroups, type GroupInfo } from "./groups";
 import type { AchievementId, Task } from "./types";
+
+export type { GroupInfo };
 
 async function baseDir(): Promise<string> {
   return join(await homeDir(), "FocusBar");
@@ -98,18 +100,8 @@ export async function saveGroupColors(colors: GroupColors): Promise<void> {
   await writeTextFile(path, JSON.stringify(colors, null, 2));
 }
 
-export interface GroupInfo {
-  name: string;
-  color: string;
-}
-
-/** Grupos existentes (de tarefas + cores salvas), com cor, ordenados em PT-BR. */
+/** Grupos existentes (derivados das tarefas), com cor, ordenados em PT-BR. */
 export async function loadGroups(): Promise<GroupInfo[]> {
   const [tasks, colors] = await Promise.all([loadTasks(), loadGroupColors()]);
-  const names = new Set<string>();
-  for (const t of tasks) if (t.group) names.add(t.group);
-  for (const name of Object.keys(colors)) names.add(name);
-  return [...names]
-    .sort((a, b) => a.localeCompare(b, "pt-BR"))
-    .map((name) => ({ name, color: groupColor(name, colors) }));
+  return deriveGroups(tasks, colors);
 }
