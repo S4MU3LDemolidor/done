@@ -197,6 +197,21 @@ export default function MainApp() {
     await saveNoteAndState(updated);
   }
 
+  async function createNote() {
+    const now = toLocalIsoDateTime(new Date());
+    const note: Note = {
+      id: crypto.randomUUID(),
+      title: "",
+      body: "",
+      linkedTasks: [],
+      linkedGroups: [],
+      created: now,
+      updatedAt: now,
+    };
+    await saveNoteAndState(note);
+    setView({ kind: "note", id: note.id });
+  }
+
   // Conquistas: avalia a cada mudança e persiste as novas
   useEffect(() => {
     if (!loaded || ach === null) return;
@@ -515,6 +530,7 @@ export default function MainApp() {
         onEditGroup={(name, x, y) => setGroupEditor({ name, x, y })}
         onOpenNote={(id) => setView({ kind: "note", id })}
         onNoteContextMenu={(id, x, y) => setNoteContextMenu({ id, x, y })}
+        onNewNote={createNote}
       />
 
       <main className="flex min-w-0 flex-1 flex-col">

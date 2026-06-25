@@ -279,8 +279,8 @@ export default function QuickAdd() {
             )
           ) : (
             <span className="text-faint">
-              título, data e grupo separados por vírgula — só o título é
-              obrigatório
+              título, data, grupo — ou comece com{" "}
+              <span className="font-medium text-dim">//</span> para criar uma nota
             </span>
           )}
         </div>

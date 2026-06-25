@@ -23,6 +23,7 @@ interface SidebarProps {
   onEditGroup: (name: string, x: number, y: number) => void;
   onOpenNote: (id: string) => void;
   onNoteContextMenu: (id: string, x: number, y: number) => void;
+  onNewNote: () => void;
 }
 
 export function Sidebar({
@@ -35,6 +36,7 @@ export function Sidebar({
   onEditGroup,
   onOpenNote,
   onNoteContextMenu,
+  onNewNote,
 }: SidebarProps) {
   const [groupsOpen, setGroupsOpen] = useState(true);
 
@@ -105,6 +107,7 @@ export function Sidebar({
             activeId={view.kind === "note" ? view.id : null}
             onOpen={onOpenNote}
             onContextMenu={onNoteContextMenu}
+            onNewNote={onNewNote}
           />
           <NavItem
             active={view.kind === "profile"}
