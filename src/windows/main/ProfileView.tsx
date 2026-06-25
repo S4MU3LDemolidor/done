@@ -1,22 +1,26 @@
 import { levelForXp, streak, totalXp } from "../../lib/game";
+import { formatFocusTotal, totalFocusSeconds } from "../../lib/focus";
 import { FlameIcon, CheckCircleIcon, SparkleIcon } from "../../components/Icons";
-import { AchievementBadge } from "../../components/glyphs";
+import { AchievementBadge, FocusGlyph } from "../../components/glyphs";
 import { ACHIEVEMENTS, ACHIEVEMENT_IDS } from "./achievements";
 import type { AchievementState } from "../../lib/store";
-import type { Task } from "../../lib/types";
+import type { FocusSession, Task } from "../../lib/types";
 
 export function ProfileView({
   tasks,
   unlocked,
+  focusSessions,
 }: {
   tasks: Task[];
   unlocked: AchievementState;
+  focusSessions: FocusSession[];
 }) {
   const xp = totalXp(tasks);
   const { level, min, next } = levelForXp(xp);
   const progress = Math.min(1, (xp - min) / (next - min));
   const doneCount = tasks.filter((t) => t.done).length;
   const streakDays = streak(tasks);
+  const focusTotal = totalFocusSeconds(focusSessions);
 
   return (
     <div className="mx-auto max-w-[560px] pt-4">
@@ -44,7 +48,7 @@ export function ProfileView({
       </div>
 
       {/* Cartões de estatísticas */}
-      <div className="mt-6 grid grid-cols-3 gap-3">
+      <div className="mt-6 grid grid-cols-2 gap-3">
         <StatCard
           icon={<FlameIcon size={18} className="text-[#FFB454]" />}
           value={String(streakDays)}
@@ -59,6 +63,11 @@ export function ProfileView({
           icon={<SparkleIcon size={18} className="text-accent" />}
           value={String(xp)}
           label="XP no total"
+        />
+        <StatCard
+          icon={<FocusGlyph size={18} className="text-[#7C9CFF]" />}
+          value={formatFocusTotal(focusTotal)}
+          label="tempo focado"
         />
       </div>
 

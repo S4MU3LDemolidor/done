@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Capabilities for the main and quick-add windows",
-  "windows": ["main", "quickadd"],
+  "description": "Capabilities for the main, quick-add and focus windows",
+  "windows": ["main", "quickadd", "focus"],
   "permissions": [
     "core:default",
     "opener:default",

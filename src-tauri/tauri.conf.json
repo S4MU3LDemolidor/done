@@ -46,6 +46,25 @@
           "effects": ["hudWindow"],
           "radius": 16
         }
+      },
+      {
+        "label": "focus",
+        "title": "Done Foco",
+        "width": 440,
+        "height": 250,
+        "visible": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "resizable": false,
+        "center": true,
+        "shadow": false,
+        "visibleOnAllWorkspaces": true,
+        "windowEffects": {
+          "effects": ["hudWindow"],
+          "radius": 16
+        }
       }
     ],
     "security": {

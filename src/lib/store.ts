@@ -9,7 +9,7 @@ import {
   writeTextFile,
 } from "@tauri-apps/plugin-fs";
 import { deriveGroups, type GroupInfo } from "./groups";
-import type { AchievementId, Task } from "./types";
+import type { AchievementId, FocusSession, Task } from "./types";
 
 export type { GroupInfo };
 
@@ -79,6 +79,36 @@ export async function saveAchievements(state: AchievementState): Promise<void> {
 export async function watchTasks(onChange: () => void): Promise<() => void> {
   await ensureDirs();
   return watch(await tasksDir(), onChange, { delayMs: 250 });
+}
+
+/** Registro append-only de sessões de foco em ~/FocusBar/focus.json */
+export async function loadFocusSessions(): Promise<FocusSession[]> {
+  const path = await join(await baseDir(), "focus.json");
+  try {
+    if (!(await exists(path))) return [];
+    const parsed = JSON.parse(await readTextFile(path));
+    return Array.isArray(parsed) ? (parsed as FocusSession[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function appendFocusSession(session: FocusSession): Promise<void> {
+  await ensureDirs();
+  const sessions = await loadFocusSessions();
+  sessions.push(session);
+  const path = await join(await baseDir(), "focus.json");
+  await writeTextFile(path, JSON.stringify(sessions, null, 2));
+}
+
+/** Observa o arquivo de sessões de foco. */
+export async function watchFocus(onChange: () => void): Promise<() => void> {
+  await ensureDirs();
+  const path = await join(await baseDir(), "focus.json");
+  if (!(await exists(path))) {
+    await writeTextFile(path, "[]");
+  }
+  return watch(path, onChange, { delayMs: 250 });
 }
 
 /** Cores escolhidas pelo usuário por grupo: { "casa": "#FF6363", ... } */

@@ -21,7 +21,16 @@ export type AchievementId =
   | "streak_7"
   | "streak_30"
   | "first_group"
-  | "level_5";
+  | "level_5"
+  | "deep_work"
+  | "flow";
+
+export interface FocusSession {
+  taskId: string;
+  startedAt: string; // ISO 8601 local datetime
+  focusedSeconds: number; // actual seconds the timer ran (count-up)
+  completed: boolean; // was the task concluded from this session
+}
 
 export interface Note {
   id: string;

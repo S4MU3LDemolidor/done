@@ -1,8 +1,13 @@
 import { toIsoDate } from "./parser";
-import type { AchievementId, Task } from "./types";
+import { focusDayStreak, hasDeepWorkSession } from "./focus";
+import type { AchievementId, FocusSession, Task } from "./types";
 
 export const BASE_XP = 10;
 export const ON_TIME_BONUS = 5;
+export const FOCUS_BONUS = 5;
+
+// Dias seguidos de foco para desbloquear a conquista "Em fluxo"
+export const FLOW_STREAK_DAYS = 3;
 
 // Limiares de nível: 0, 100, 250, 500, 1000, 2000 e depois dobrando
 const THRESHOLDS = [0, 100, 250, 500, 1000, 2000];
@@ -12,10 +17,16 @@ function thresholdFor(level: number): number {
   return THRESHOLDS[THRESHOLDS.length - 1] * 2 ** (level - THRESHOLDS.length);
 }
 
-export function xpForCompletion(due: string | null, completedAt: Date): number {
-  if (!due) return BASE_XP;
+export function xpForCompletion(
+  due: string | null,
+  completedAt: Date,
+  fromFocus: boolean = false,
+): number {
+  const focusBonus = fromFocus ? FOCUS_BONUS : 0;
+  if (!due) return BASE_XP + focusBonus;
   const completedDay = toIsoDate(completedAt);
-  return completedDay <= due ? BASE_XP + ON_TIME_BONUS : BASE_XP;
+  const onTimeBonus = completedDay <= due ? ON_TIME_BONUS : 0;
+  return BASE_XP + onTimeBonus + focusBonus;
 }
 
 export function totalXp(tasks: Task[]): number {
@@ -55,6 +66,7 @@ export function streak(tasks: Task[], now: Date = new Date()): number {
 export function evaluateAchievements(
   tasks: Task[],
   now: Date = new Date(),
+  sessions: FocusSession[] = [],
 ): AchievementId[] {
   const doneCount = tasks.filter((t) => t.done).length;
   const currentStreak = streak(tasks, now);
@@ -67,5 +79,7 @@ export function evaluateAchievements(
   if (currentStreak >= 30) unlocked.push("streak_30");
   if (tasks.some((t) => t.group)) unlocked.push("first_group");
   if (level >= 5) unlocked.push("level_5");
+  if (hasDeepWorkSession(sessions)) unlocked.push("deep_work");
+  if (focusDayStreak(sessions, now) >= FLOW_STREAK_DAYS) unlocked.push("flow");
   return unlocked;
 }

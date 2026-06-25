@@ -4,7 +4,7 @@ use tauri::{
     AppHandle, Emitter, Manager, RunEvent, WindowEvent,
 };
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
-use tauri_plugin_global_shortcut::{Modifiers, ShortcutState};
+use tauri_plugin_global_shortcut::{Code, Modifiers, ShortcutState};
 
 fn toggle_quickadd(app: &AppHandle) {
     let Some(win) = app.get_webview_window("quickadd") else {
@@ -25,6 +25,17 @@ fn show_main(app: &AppHandle) {
         let _ = win.show();
         let _ = win.set_focus();
     }
+}
+
+fn open_focus(app: &AppHandle) {
+    let Some(win) = app.get_webview_window("focus") else {
+        return;
+    };
+    let _ = win.center();
+    let _ = win.show();
+    let _ = win.set_focus();
+    // Reinicia o seletor de foco e recarrega as tarefas no front-end
+    let _ = app.emit_to("focus", "focus:open", ());
 }
 
 fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
@@ -99,15 +110,17 @@ pub fn run() {
         ))
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
-                // Alt+Space → adição rápida; Cmd+Alt+Space → abre a janela principal
-                .with_shortcuts(["Alt+Space", "Cmd+Alt+Space"])
+                // Alt+Space → adição rápida; Cmd+Alt+Space → janela principal; Alt+F → foco
+                .with_shortcuts(["Alt+Space", "Cmd+Alt+Space", "Alt+KeyF"])
                 .expect("invalid shortcut definition")
                 .with_handler(|app, shortcut, event| {
                     if event.state() != ShortcutState::Pressed {
                         return;
                     }
-                    // Cmd (SUPER) presente distingue o atalho da janela principal
-                    if shortcut.mods.contains(Modifiers::SUPER) {
+                    // Alt+F → modo foco; Cmd+Alt+Space → principal; Alt+Space → adição rápida
+                    if shortcut.key == Code::KeyF {
+                        open_focus(app);
+                    } else if shortcut.mods.contains(Modifiers::SUPER) {
                         show_main(app);
                     } else {
                         toggle_quickadd(app);

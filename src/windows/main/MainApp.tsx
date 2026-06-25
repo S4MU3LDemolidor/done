@@ -6,6 +6,7 @@ import { evaluateAchievements, streak, xpForCompletion } from "../../lib/game";
 import {
   deleteTask,
   loadAchievements,
+  loadFocusSessions,
   loadGroupColors,
   loadTasks,
   saveAchievements,
@@ -46,7 +47,7 @@ import {
 } from "./views";
 import type { RowActions } from "./TaskRow";
 import type { ReactNode } from "react";
-import type { Note, Task } from "../../lib/types";
+import type { FocusSession, Note, Task } from "../../lib/types";
 
 export type View =
   | { kind: "today" }
@@ -76,6 +77,7 @@ export default function MainApp() {
   const [groupColors, setGroupColors] = useState<GroupColors>({});
   const [groupEditor, setGroupEditor] = useState<GroupEditorTarget | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
+  const [focusSessions, setFocusSessions] = useState<FocusSession[]>([]);
   const [noteContextMenu, setNoteContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [renamingNoteId, setRenamingNoteId] = useState<string | null>(null);
   const toastId = useRef(0);
@@ -104,6 +106,14 @@ export default function MainApp() {
     }
   }, []);
 
+  const reloadFocus = useCallback(async () => {
+    try {
+      setFocusSessions(await loadFocusSessions());
+    } catch (err) {
+      console.error("Falha ao carregar sessões de foco:", err);
+    }
+  }, []);
+
   // Carga inicial + observador da pasta de tarefas e notas
   useEffect(() => {
     let cancelled = false;
@@ -111,6 +121,7 @@ export default function MainApp() {
     let unwatchNotes: (() => void) | undefined;
     reload();
     reloadNotes();
+    reloadFocus();
     loadAchievements().then((a) => {
       if (!cancelled) setAch(a);
     });
@@ -130,7 +141,7 @@ export default function MainApp() {
       unwatchTasks?.();
       unwatchNotes?.();
     };
-  }, [reload, reloadNotes]);
+  }, [reload, reloadNotes, reloadFocus]);
 
   const pushToast = useCallback(
     (icon: ReactNode, title: string, sub?: string, action?: Toast["action"]) => {
@@ -215,7 +226,7 @@ export default function MainApp() {
   // Conquistas: avalia a cada mudança e persiste as novas
   useEffect(() => {
     if (!loaded || ach === null) return;
-    const earned = evaluateAchievements(tasks);
+    const earned = evaluateAchievements(tasks, new Date(), focusSessions);
     const fresh = earned.filter((id) => !ach[id]);
     if (fresh.length === 0) return;
     const now = toLocalIsoDateTime(new Date());
@@ -232,7 +243,7 @@ export default function MainApp() {
     saveAchievements(updated).catch((err) =>
       console.error("Falha ao salvar conquistas:", err),
     );
-  }, [tasks, loaded, ach, pushToast]);
+  }, [tasks, loaded, ach, focusSessions, pushToast]);
 
   // Escuta evento da barra rápida para abrir uma nota
   useEffect(() => {
@@ -245,6 +256,17 @@ export default function MainApp() {
       unlisten.then((fn) => fn());
     };
   }, [reloadNotes]);
+
+  // Sessão de foco registrada: recarrega para atualizar Perfil/conquistas
+  useEffect(() => {
+    const mainWin = getCurrentWebviewWindow();
+    const unlisten = mainWin.listen("focus:done", () => {
+      reloadFocus();
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [reloadFocus]);
 
   async function persist(updated: Task) {
     setTasks((ts) => ts.map((t) => (t.id === updated.id ? updated : t)));
@@ -555,7 +577,7 @@ export default function MainApp() {
 
         <div className="flex-1 overflow-y-auto px-5 py-2">
           {!loaded ? null : view.kind === "profile" ? (
-            <ProfileView tasks={tasks} unlocked={ach ?? {}} />
+            <ProfileView tasks={tasks} unlocked={ach ?? {}} focusSessions={focusSessions} />
           ) : view.kind === "agenda" ? (
             <CalendarView
               tasks={tasks}

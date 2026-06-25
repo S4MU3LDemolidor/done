@@ -6,7 +6,14 @@ import {
   totalXp,
   xpForCompletion,
 } from "./game";
-import type { Task } from "./types";
+import type { FocusSession, Task } from "./types";
+
+function focusSession(
+  startedAt: string,
+  focusedSeconds: number,
+): FocusSession {
+  return { taskId: "t", startedAt, focusedSeconds, completed: true };
+}
 
 // Quinta-feira, 11 de junho de 2026
 const NOW = new Date(2026, 5, 11, 14, 0);
@@ -42,6 +49,18 @@ describe("xpForCompletion", () => {
 
   test("depois do prazo ganha só 10", () => {
     expect(xpForCompletion("2026-06-10", NOW)).toBe(10);
+  });
+
+  test("concluída em foco ganha bônus de foco: +5", () => {
+    expect(xpForCompletion(null, NOW, true)).toBe(15);
+  });
+
+  test("foco + no prazo somam os dois bônus: 20", () => {
+    expect(xpForCompletion("2026-06-20", NOW, true)).toBe(20);
+  });
+
+  test("foco vale o bônus mesmo fora do prazo: 15", () => {
+    expect(xpForCompletion("2026-06-10", NOW, true)).toBe(15);
   });
 });
 
@@ -163,5 +182,38 @@ describe("evaluateAchievements", () => {
   test("1000 XP (nível 5) desbloqueia level_5", () => {
     const tasks = Array.from({ length: 100 }, () => doneTask({ xp: 10 }));
     expect(evaluateAchievements(tasks, NOW)).toContain("level_5");
+  });
+
+  test("sessão de foco de 25min desbloqueia deep_work", () => {
+    const sessions = [focusSession("2026-06-11T09:00:00", 1500)];
+    expect(evaluateAchievements([], NOW, sessions)).toContain("deep_work");
+  });
+
+  test("sessões curtas não desbloqueiam deep_work", () => {
+    const sessions = [focusSession("2026-06-11T09:00:00", 1499)];
+    expect(evaluateAchievements([], NOW, sessions)).not.toContain("deep_work");
+  });
+
+  test("foco em 3 dias seguidos desbloqueia flow", () => {
+    const sessions = [
+      focusSession("2026-06-09T09:00:00", 600),
+      focusSession("2026-06-10T09:00:00", 600),
+      focusSession("2026-06-11T09:00:00", 600),
+    ];
+    expect(evaluateAchievements([], NOW, sessions)).toContain("flow");
+  });
+
+  test("menos de 3 dias de foco não desbloqueia flow", () => {
+    const sessions = [
+      focusSession("2026-06-10T09:00:00", 600),
+      focusSession("2026-06-11T09:00:00", 600),
+    ];
+    expect(evaluateAchievements([], NOW, sessions)).not.toContain("flow");
+  });
+
+  test("sem sessões de foco não desbloqueia deep_work nem flow", () => {
+    const unlocked = evaluateAchievements([doneTask()], NOW);
+    expect(unlocked).not.toContain("deep_work");
+    expect(unlocked).not.toContain("flow");
   });
 });
