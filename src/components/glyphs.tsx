@@ -132,6 +132,28 @@ export function FocusGlyph(p: GlyphProps) {
   );
 }
 
+export function MoneyGlyph(p: GlyphProps) {
+  return (
+    <svg {...svgProps(p)}>
+      <rect x="2.5" y="6" width="19" height="12" rx="2.6" fill="currentColor" opacity="0.18" />
+      <rect
+        x="2.5"
+        y="6"
+        width="19"
+        height="12"
+        rx="2.6"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        fill="none"
+        opacity="0.5"
+      />
+      <circle cx="12" cy="12" r="2.8" stroke="currentColor" strokeWidth="1.7" fill="none" />
+      <circle cx="5.8" cy="12" r="1" fill="currentColor" />
+      <circle cx="18.2" cy="12" r="1" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function WarnGlyph(p: GlyphProps) {
   return (
     <svg {...svgProps(p)}>

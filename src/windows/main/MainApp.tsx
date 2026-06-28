@@ -6,14 +6,17 @@ import { evaluateAchievements, streak, xpForCompletion } from "../../lib/game";
 import {
   deleteTask,
   loadAchievements,
+  loadClients,
   loadFocusSessions,
   loadGroupColors,
   loadTasks,
   saveAchievements,
+  saveClients,
   saveGroupColors,
   saveTask,
   watchTasks,
   type AchievementState,
+  type ClientMap,
   type GroupColors,
 } from "../../lib/store";
 import {
@@ -75,6 +78,7 @@ export default function MainApp() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [groupColors, setGroupColors] = useState<GroupColors>({});
+  const [clients, setClients] = useState<ClientMap>({});
   const [groupEditor, setGroupEditor] = useState<GroupEditorTarget | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
   const [focusSessions, setFocusSessions] = useState<FocusSession[]>([]);
@@ -127,6 +131,9 @@ export default function MainApp() {
     });
     loadGroupColors().then((c) => {
       if (!cancelled) setGroupColors(c);
+    });
+    loadClients().then((c) => {
+      if (!cancelled) setClients(c);
     });
     watchTasks(reload).then((fn) => {
       if (cancelled) fn();
@@ -337,6 +344,18 @@ export default function MainApp() {
     });
   }
 
+  function setClient(name: string, monthly: number | null) {
+    setClients((prev) => {
+      const next = { ...prev };
+      if (monthly === null) delete next[name];
+      else next[name] = monthly;
+      saveClients(next).catch((err) =>
+        console.error("Falha ao salvar clientes:", err),
+      );
+      return next;
+    });
+  }
+
   async function renameGroup(oldName: string, newName: string) {
     setGroupEditor(null);
     if (tasks.some((t) => t.group === newName)) {
@@ -354,6 +373,16 @@ export default function MainApp() {
       delete next[oldName];
       saveGroupColors(next).catch((err) =>
         console.error("Falha ao salvar cores de grupo:", err),
+      );
+      return next;
+    });
+    // Renomeia o cliente salvo
+    setClients((prev) => {
+      if (prev[oldName] === undefined) return prev;
+      const next = { ...prev, [newName]: prev[oldName] };
+      delete next[oldName];
+      saveClients(next).catch((err) =>
+        console.error("Falha ao salvar clientes:", err),
       );
       return next;
     });
@@ -378,6 +407,7 @@ export default function MainApp() {
     setGroupEditor(null);
     const affected = tasks.filter((t) => t.group === name);
     const removedColor = groupColors[name];
+    const removedClient = clients[name];
 
     // Exclui as tarefas do grupo e remove a cor salva (some do Option+Space também)
     setTasks((ts) => ts.filter((t) => t.group !== name));
@@ -390,6 +420,16 @@ export default function MainApp() {
         delete next[name];
         saveGroupColors(next).catch((err) =>
           console.error("Falha ao salvar cores de grupo:", err),
+        );
+        return next;
+      });
+    }
+    if (removedClient !== undefined) {
+      setClients((prev) => {
+        const next = { ...prev };
+        delete next[name];
+        saveClients(next).catch((err) =>
+          console.error("Falha ao salvar clientes:", err),
         );
         return next;
       });
@@ -424,6 +464,15 @@ export default function MainApp() {
               const next = { ...prev, [name]: removedColor };
               saveGroupColors(next).catch((err) =>
                 console.error("Falha ao restaurar cor do grupo:", err),
+              );
+              return next;
+            });
+          }
+          if (removedClient !== undefined) {
+            setClients((prev) => {
+              const next = { ...prev, [name]: removedClient };
+              saveClients(next).catch((err) =>
+                console.error("Falha ao restaurar cliente:", err),
               );
               return next;
             });
@@ -611,6 +660,7 @@ export default function MainApp() {
                 <Dashboard
                   tasks={tasks}
                   groups={groups}
+                  clients={clients}
                   onOpenGroup={(name) => setView({ kind: "group", name })}
                 />
               )}
@@ -711,8 +761,10 @@ export default function MainApp() {
         <GroupEditor
           target={groupEditor}
           colors={groupColors}
+          clients={clients}
           onRename={renameGroup}
           onSetColor={setGroupColor}
+          onSetClient={setClient}
           onDelete={deleteGroup}
           onClose={() => setGroupEditor(null)}
         />

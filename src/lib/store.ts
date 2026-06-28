@@ -9,9 +9,11 @@ import {
   writeTextFile,
 } from "@tauri-apps/plugin-fs";
 import { deriveGroups, type GroupInfo } from "./groups";
+import type { ClientMap } from "./clients";
 import type { AchievementId, FocusSession, Task } from "./types";
 
 export type { GroupInfo };
+export type { ClientMap };
 
 async function baseDir(): Promise<string> {
   return join(await homeDir(), "FocusBar");
@@ -128,6 +130,23 @@ export async function saveGroupColors(colors: GroupColors): Promise<void> {
   await ensureDirs();
   const path = await join(await baseDir(), "groups.json");
   await writeTextFile(path, JSON.stringify(colors, null, 2));
+}
+
+/** Clientes: grupo → valor mensal em reais, em ~/FocusBar/clients.json */
+export async function loadClients(): Promise<ClientMap> {
+  const path = await join(await baseDir(), "clients.json");
+  try {
+    if (!(await exists(path))) return {};
+    return JSON.parse(await readTextFile(path)) as ClientMap;
+  } catch {
+    return {};
+  }
+}
+
+export async function saveClients(clients: ClientMap): Promise<void> {
+  await ensureDirs();
+  const path = await join(await baseDir(), "clients.json");
+  await writeTextFile(path, JSON.stringify(clients, null, 2));
 }
 
 /** Grupos existentes (derivados das tarefas), com cor, ordenados em PT-BR. */
